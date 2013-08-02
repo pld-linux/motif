@@ -11,7 +11,7 @@ Version:	2.3.4
 Release:	1
 License:	LGPL v2.1
 Group:		X11/Libraries
-Source0:	http://downloads.sourceforge.net/%{name}/Motif%%20%{version}%%20Source%%20Code/%{name}-%{version}-src.tgz
+Source0:	http://downloads.sourceforge.net/%{name}/Motif%20%{version}%20Source%20Code/%{name}-%{version}-src.tgz
 # Source0-md5:	612bb8127d0d31da6e5474edf8a5c247
 Source2:	mwmrc
 Source5:	mwm-xsession.desktop
