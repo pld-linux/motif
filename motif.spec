@@ -4,16 +4,15 @@
 # when stable version somes out everything would need to be recompiled
 # using ,,stable soname''. Check out CURRENT= in configure.{in,ac}.
 #
-Summary:	OpenMotif
-Summary(pl.UTF-8):	OpenMotif
-Name:		openmotif
-Version:	2.3.3
-Release:	7
-License:	Open Group Public License
+Summary:	Motif
+Summary(pl.UTF-8):	Motif
+Name:		motif
+Version:	2.3.4
+Release:	1
+License:	LGPL v2.1
 Group:		X11/Libraries
-Source0:	ftp://ftp.ics.com/openmotif/2.3/%{version}/%{name}-%{version}.tar.gz
-# Source0-md5:	fd27cd3369d6c7d5ef79eccba524f7be
-#Source1:	%{name}-%{version}-icsextra.tgz
+Source0:	http://downloads.sourceforge.net/%{name}/Motif%%20%{version}%%20Source%%20Code/%{name}-%{version}-src.tgz
+# Source0-md5:	612bb8127d0d31da6e5474edf8a5c247
 Source2:	mwmrc
 Source5:	mwm-xsession.desktop
 Source6:	ac_find_motif.m4
@@ -23,7 +22,7 @@ Patch2:		%{name}-bison.patch
 Patch3:		%{name}-freetype.patch
 Patch4:		%{name}-parbuild.patch
 Patch5:		format-security.patch
-URL:		http://www.openmotif.org/
+URL:		http://motif.ics.com/
 BuildRequires:	autoconf >= 2.59-9
 BuildRequires:	automake
 BuildRequires:	bison
@@ -39,10 +38,8 @@ BuildRequires:	xorg-lib-libXft-devel
 BuildRequires:	xorg-lib-libXmu-devel
 BuildRequires:	xorg-lib-libXp-devel
 Requires:	%{name}-libs = %{version}-%{release}
-Provides:	motif = 2.3
-# Not restricted, lesstif provided library version 1.2
-# OpenMotif provide library version 2.1
-#Obsoletes:	lesstif
+Obsoletes:	lesstif
+Obsoletes:	openmotif < 2.3.4-1
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		specflags	-fno-strict-aliasing
@@ -66,6 +63,7 @@ Summary(pl.UTF-8):	OpenMotif - programy klienckie
 Group:		X11/Applications
 Requires:	%{name} = %{version}-%{release}
 Obsoletes:	lesstif-clients
+Obsoletes:	openmotif-clients < 2.3.4-1
 
 %description clients
 Uil and xmbind.
@@ -77,7 +75,7 @@ uil i xmbind.
 Summary:	OpenMotif shared libraries
 Summary(pl.UTF-8):	Biblioteki współdzielone OpenMotif
 Group:		Libraries
-Conflicts:	openmotif < 2.2.3-0.3
+Obsoletes:	openmotif-libs < 2.3.4-1
 
 %description libs
 OpenMotif shared libraries.
@@ -92,8 +90,8 @@ Group:		X11/Development/Libraries
 Requires:	%{name}-libs = %{version}-%{release}
 Requires:	xorg-lib-libXmu-devel
 Requires:	xorg-lib-libXp-devel
-Provides:	motif-devel = 2.3
 Obsoletes:	lesstif-devel
+Obsoletes:	openmotif-devel < 2.3.4-1
 
 %description devel
 Header files for OpenMotif.
@@ -106,8 +104,8 @@ Summary:	OpenMotif static
 Summary(pl.UTF-8):	Statyczne biblioteki OpenMotif
 Group:		X11/Development/Libraries
 Requires:	%{name}-devel = %{version}-%{release}
-Provides:	motif-static = 2.3
 Obsoletes:	lesstif-static
+Obsoletes:	openmotif-static < 2.3.4-1
 
 %description static
 OpenMotif static libraries.
@@ -120,6 +118,7 @@ Summary:	OpenMotif demos
 Summary(pl.UTF-8):	Programy demonstracyjne do OpenMotif
 Group:		X11/Development/Libraries
 Requires:	%{name}-devel = %{version}-%{release}
+Obsoletes:	openmotif-demos < 2.3.4-1
 
 %description demos
 OpenMotif demos.
@@ -133,6 +132,7 @@ Summary(pl.UTF-8):	Motifowy zarządca okien
 Group:		X11/Window Managers
 Requires:	%{name} = %{version}-%{release}
 Obsoletes:	lesstif-mwm
+Obsoletes:	openmotif-mwm < 2.3.4-1
 
 %description mwm
 A BETA release of mwm. It is derived from fvwm, with a new parser that
@@ -144,8 +144,8 @@ Wersja BETA mwm. Pochodzi z fvwm, ma nowy parser rozumiejący składnię
 mwmrc oraz zasoby Mwm.
 
 %package compat
-Summary:	Fake OpenMotif compat libraries
-Summary(pl.UTF-8):	Dowiązania udające biblioteki kompatybilności OpenMotif
+Summary:	Fake Motif compat libraries
+Summary(pl.UTF-8):	Dowiązania udające biblioteki kompatybilności Motif
 Group:		Libraries
 Requires:	%{_libdir}/libXm.so.4.0.3
 %ifarch %{x8664} ia64 ppc64 s390x sparc64
@@ -236,7 +236,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
-%doc LICENSE COPYRIGHT.MOTIF RELNOTES
+%doc BUGREPORT ChangeLog README RELNOTES
 %{xbitmapsdir}/*
 %{xlibdir}/bindings
 

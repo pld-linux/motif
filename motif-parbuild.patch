@@ -9,23 +9,6 @@
  wmlparse.c: wmllex.c
  
  wmllex.c: wmllex.l
-@@ -50,12 +50,15 @@
- 	$(LN_S) Uil.h UilLexPars.h
- 	$(LN_S) Uil.c UilLexPars.c
- 
--$(WMLTARGETS): wmluiltok wml UilLexPars.c $(TABLE)
-+$(WMLTARGETS): wmltargets-stamp
-+
-+wmltargets-stamp: wmluiltok wml UilLexPars.c $(TABLE)
- 	$(RM) $(WMLTARGETS) wml.report wml-uil.mm
- 	./wmluiltok <$(srcdir)/Uil.y >tokens.dat
- 	$(RM) wml-uil.mm
- 	./wml $(srcdir)/$(TABLE)
- 	$(RM) tokens.dat
-+	touch wmltargets-stamp
- 
- all: motif.wmd
- 
 --- openmotif-2.3.0/demos/lib/Exm/wml/Makefile.am.orig	2002-10-06 15:08:47.000000000 +0200
 +++ openmotif-2.3.0/demos/lib/Exm/wml/Makefile.am	2007-11-27 19:18:05.605165122 +0100
 @@ -60,7 +60,9 @@
