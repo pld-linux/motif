@@ -8,7 +8,7 @@ Summary:	Motif
 Summary(pl.UTF-8):	Motif
 Name:		motif
 Version:	2.3.4
-Release:	2
+Release:	3
 License:	LGPL v2.1
 Group:		X11/Libraries
 Source0:	http://downloads.sourceforge.net/motif/%{name}-%{version}-src.tgz
@@ -147,7 +147,7 @@ mwmrc oraz zasoby Mwm.
 Summary:	Fake Motif compat libraries
 Summary(pl.UTF-8):	Dowiązania udające biblioteki kompatybilności Motif
 Group:		Libraries
-Requires:	%{_libdir}/libXm.so.4.0.3
+Requires:	%{name}-libs = %{version}-%{release}
 %ifarch %{x8664} ia64 ppc64 s390x sparc64
 Provides:	libXm.so.1()(64bit)
 Provides:	libXm.so.2()(64bit)
