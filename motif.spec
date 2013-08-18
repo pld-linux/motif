@@ -8,7 +8,7 @@ Summary:	Motif
 Summary(pl.UTF-8):	Motif
 Name:		motif
 Version:	2.3.4
-Release:	1
+Release:	2
 License:	LGPL v2.1
 Group:		X11/Libraries
 Source0:	http://downloads.sourceforge.net/motif/%{name}-%{version}-src.tgz
@@ -224,9 +224,10 @@ install %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/X11/mwm/system.mwmrc
 install %{SOURCE5} $RPM_BUILD_ROOT%{_datadir}/xsessions/mwm.desktop
 install %{SOURCE6} $RPM_BUILD_ROOT%{_aclocaldir}
 
-ln -sf libXm.so.4.0.3 $RPM_BUILD_ROOT%{_libdir}/libXm.so.3
-ln -sf libXm.so.4.0.3 $RPM_BUILD_ROOT%{_libdir}/libXm.so.2
-ln -sf libXm.so.4.0.3 $RPM_BUILD_ROOT%{_libdir}/libXm.so.1
+cd $RPM_BUILD_ROOT%{_libdir}
+ln -sf libXm.so.*.*.* libXm.so.3
+ln -sf libXm.so.*.*.* libXm.so.2
+ln -sf libXm.so.*.*.* libXm.so.1
 
 %clean
 rm -rf $RPM_BUILD_ROOT
