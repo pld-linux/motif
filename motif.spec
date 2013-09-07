@@ -1,11 +1,11 @@
 #
-# WARNING: BETA versions of openmotif are using higher soname
+# WARNING: BETA versions of motif/openmotif are using higher soname
 # than STABLE one so please don't use beta versions here because
 # when stable version somes out everything would need to be recompiled
 # using ,,stable soname''. Check out CURRENT= in configure.{in,ac}.
 #
-Summary:	Motif
-Summary(pl.UTF-8):	Motif
+Summary:	Motif toolkit
+Summary(pl.UTF-8):	Toolkit Motif
 Name:		motif
 Version:	2.3.4
 Release:	3
@@ -58,34 +58,34 @@ działających w środowiskach UNIX takich jak Sun, HP, IBM, Compaq, SGI
 i inne.
 
 %package clients
-Summary:	OpenMotif clients
-Summary(pl.UTF-8):	OpenMotif - programy klienckie
+Summary:	Motif clients
+Summary(pl.UTF-8):	Motif - programy klienckie
 Group:		X11/Applications
 Requires:	%{name} = %{version}-%{release}
 Obsoletes:	lesstif-clients
 Obsoletes:	openmotif-clients < 2.3.4-1
 
 %description clients
-Uil and xmbind.
+Motif clients: uil and xmbind.
 
 %description clients -l pl.UTF-8
-uil i xmbind.
+Programy klienckie dla Motifa: uil i xmbind.
 
 %package libs
-Summary:	OpenMotif shared libraries
-Summary(pl.UTF-8):	Biblioteki współdzielone OpenMotif
+Summary:	Motif shared libraries
+Summary(pl.UTF-8):	Biblioteki współdzielone Motifa
 Group:		Libraries
 Obsoletes:	openmotif-libs < 2.3.4-1
 
 %description libs
-OpenMotif shared libraries.
+Motif shared libraries.
 
 %description libs -l pl.UTF-8
-Biblioteki współdzielone OpenMotifa.
+Biblioteki współdzielone Motifa.
 
 %package devel
-Summary:	OpenMotif devel
-Summary(pl.UTF-8):	Pliki nagłówkowe OpenMotif
+Summary:	Header files for Motif libraries
+Summary(pl.UTF-8):	Pliki nagłówkowe bibliotek Motif
 Group:		X11/Development/Libraries
 Requires:	%{name}-libs = %{version}-%{release}
 Requires:	xorg-lib-libXmu-devel
@@ -94,37 +94,37 @@ Obsoletes:	lesstif-devel
 Obsoletes:	openmotif-devel < 2.3.4-1
 
 %description devel
-Header files for OpenMotif.
+Header files for Motif libraries.
 
 %description devel -l pl.UTF-8
-Pliki nagłówkowe dla bibliotek OpenMotif.
+Pliki nagłówkowe bibliotek Motif.
 
 %package static
-Summary:	OpenMotif static
-Summary(pl.UTF-8):	Statyczne biblioteki OpenMotif
+Summary:	Motif static libraries
+Summary(pl.UTF-8):	Statyczne biblioteki Motifa
 Group:		X11/Development/Libraries
 Requires:	%{name}-devel = %{version}-%{release}
 Obsoletes:	lesstif-static
 Obsoletes:	openmotif-static < 2.3.4-1
 
 %description static
-OpenMotif static libraries.
+Motif static libraries.
 
 %description static -l pl.UTF-8
-Biblioteki statyczne OpenMotifa.
+Biblioteki statyczne Motifa.
 
 %package demos
-Summary:	OpenMotif demos
-Summary(pl.UTF-8):	Programy demonstracyjne do OpenMotif
+Summary:	Motif demos
+Summary(pl.UTF-8):	Programy demonstracyjne do Motifa
 Group:		X11/Development/Libraries
 Requires:	%{name}-devel = %{version}-%{release}
 Obsoletes:	openmotif-demos < 2.3.4-1
 
 %description demos
-OpenMotif demos.
+Motif demos.
 
 %description demos -l pl.UTF-8
-Programy demonstracyjne OpenMotifa.
+Programy demonstracyjne do Motifa.
 
 %package mwm
 Summary:	Motif window manager
@@ -159,13 +159,13 @@ Provides:	libXm.so.3
 %endif
 
 %description compat
-Fake OpenMotif compat libraries (symlinks to current libXm library,
-_some_ old programs may work with them).
+Fake Motif/OpenMotif compat libraries (symlinks to current libXm
+library, _some_ old programs may work with them).
 
 %description compat -l pl.UTF-8
-Dowiązania udające biblioteki kompatybilności OpenMotif (dowiązania
-symboliczne do nowej wersji biblioteki libXm, _niektóre_ stare
-programy mogą z nimi działać).
+Dowiązania udające biblioteki kompatybilności Motif/OpenMotif
+(dowiązania symboliczne do nowej wersji biblioteki libXm, _niektóre_
+stare programy mogą z nimi działać).
 
 %prep
 %setup -q
@@ -214,10 +214,10 @@ cd demos
 # breaks -bi --short-circuit !
 %{__make} clean
 cp -a * $RPM_BUILD_ROOT%{_examplesdir}/motif
-rm -rf $RPM_BUILD_ROOT%{_datadir}/Xm
+%{__rm} -r $RPM_BUILD_ROOT%{_datadir}/Xm
 cd ..
-mv -f $RPM_BUILD_ROOT%{_bindir}/{,openmotif-}column || :
-mv -f $RPM_BUILD_ROOT%{_bindir}/{,openmotif-}tree || :
+mv -f $RPM_BUILD_ROOT%{_bindir}/{,motif-}column
+mv -f $RPM_BUILD_ROOT%{_bindir}/{,motif-}tree
 
 install %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/X11/mwm/system.mwmrc
 
@@ -238,12 +238,12 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(644,root,root,755)
 %doc BUGREPORT ChangeLog README RELNOTES
-%{xbitmapsdir}/*
+%{xbitmapsdir}/xm_*
 %{xlibdir}/bindings
 
 %files clients
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_bindir}/uil*
+%attr(755,root,root) %{_bindir}/uil
 %attr(755,root,root) %{_bindir}/xmbind
 %{_mandir}/man1/uil.1*
 %{_mandir}/man1/xmbind.1*
@@ -268,8 +268,27 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/Mrm
 %{_includedir}/Xm
 %{_includedir}/uil
-%{_mandir}/man3/*
-%{_mandir}/man5/*
+%{_mandir}/man3/ApplicationShell.3*
+%{_mandir}/man3/Composite.3*
+%{_mandir}/man3/Constraint.3*
+%{_mandir}/man3/Core.3*
+%{_mandir}/man3/Mrm*.3*
+%{_mandir}/man3/Object.3*
+%{_mandir}/man3/OverrideShell.3*
+%{_mandir}/man3/RectObj.3*
+%{_mandir}/man3/Shell.3*
+%{_mandir}/man3/TopLevelShell.3*
+%{_mandir}/man3/TransientShell.3*
+%{_mandir}/man3/Uil.3*
+%{_mandir}/man3/UilDumpSymbolTable.3*
+%{_mandir}/man3/VendorShell.3*
+%{_mandir}/man3/VirtualBindings.3*
+%{_mandir}/man3/WMShell.3*
+%{_mandir}/man3/Xm*.3*
+# should be man7?
+%{_mandir}/man5/Traits.5*
+%{_mandir}/man5/UIL.5*
+%{_mandir}/man5/WML.5*
 %{_aclocaldir}/ac_find_motif.m4
 
 %files static
@@ -285,7 +304,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/autopopups
 %attr(755,root,root) %{_bindir}/bboxdemo
 %attr(755,root,root) %{_bindir}/colordemo
-%attr(755,root,root) %{_bindir}/openmotif-column
+%attr(755,root,root) %{_bindir}/motif-column
 %attr(755,root,root) %{_bindir}/combo
 %attr(755,root,root) %{_bindir}/draw
 %attr(755,root,root) %{_bindir}/earth
@@ -310,7 +329,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/tabstack
 %attr(755,root,root) %{_bindir}/todo
 %attr(755,root,root) %{_bindir}/tooltips
-%attr(755,root,root) %{_bindir}/openmotif-tree
+%attr(755,root,root) %{_bindir}/motif-tree
 %attr(755,root,root) %{_bindir}/wsm
 %attr(755,root,root) %{_bindir}/xmanimate
 %{_examplesdir}/motif
@@ -319,10 +338,11 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(644,root,root,755)
 %attr(755,root,root) %{_bindir}/mwm
 %dir %{_sysconfdir}/X11/mwm
-%config %{_sysconfdir}/X11/mwm/*
+%config(noreplace) %verify(not md5 mtime size) %{_sysconfdir}/X11/mwm/system.mwmrc
 %{_datadir}/xsessions/mwm.desktop
 %{_mandir}/man1/mwm.1*
-%{_mandir}/man4/*
+# should be man5
+%{_mandir}/man4/mwmrc.4*
 
 %files compat
 %defattr(644,root,root,755)
