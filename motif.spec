@@ -27,6 +27,7 @@ BuildRequires:	autoconf >= 2.59-9
 BuildRequires:	automake
 BuildRequires:	bison
 BuildRequires:	flex
+BuildRequires:	fontconfig-devel
 BuildRequires:	freetype-devel
 BuildRequires:	libjpeg-devel
 BuildRequires:	libpng-devel >= 2:1.4.0
@@ -34,9 +35,12 @@ BuildRequires:	libtool
 BuildRequires:	libuuid-devel
 BuildRequires:	pkgconfig
 BuildRequires:	xorg-data-xbitmaps
+BuildRequires:	xorg-lib-libX11-devel
+BuildRequires:	xorg-lib-libXext-devel
 BuildRequires:	xorg-lib-libXft-devel
 BuildRequires:	xorg-lib-libXmu-devel
 BuildRequires:	xorg-lib-libXp-devel
+BuildRequires:	xorg-lib-libXt-devel
 Requires:	%{name}-libs = %{version}-%{release}
 Obsoletes:	lesstif
 Obsoletes:	openmotif < 2.3.4-1
@@ -88,8 +92,11 @@ Summary:	Header files for Motif libraries
 Summary(pl.UTF-8):	Pliki nagłówkowe bibliotek Motif
 Group:		X11/Development/Libraries
 Requires:	%{name}-libs = %{version}-%{release}
+Requires:	xorg-lib-libX11-devel
+Requires:	xorg-lib-libXft-devel
 Requires:	xorg-lib-libXmu-devel
 Requires:	xorg-lib-libXp-devel
+Requires:	xorg-lib-libXt-devel
 Obsoletes:	lesstif-devel
 Obsoletes:	openmotif-devel < 2.3.4-1
 
@@ -175,9 +182,6 @@ stare programy mogą z nimi działać).
 %patch3 -p1
 %patch4 -p1
 %patch5 -p1
-
-# png_check_sig was replaced by png_sig_cmp in libpng
-%{__sed} -i -e 's/if (!png_check_sig(sig, 8))/if (png_sig_cmp(sig, 0, 8))/g' lib/Xm/Png.c
 
 %build
 %{__libtoolize}
