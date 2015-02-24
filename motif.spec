@@ -8,7 +8,7 @@ Summary:	Motif toolkit
 Summary(pl.UTF-8):	Toolkit Motif
 Name:		motif
 Version:	2.3.4
-Release:	5
+Release:	6
 License:	LGPL v2.1
 Group:		X11/Libraries
 Source0:	http://downloads.sourceforge.net/motif/%{name}-%{version}-src.tgz
