@@ -41,7 +41,7 @@
  .PP
  .nf
 -\f(CW/usr/X11R6/bin/X11/mwm -xrm "mwm*configFile: mymwmrc"\fR
-+\f(CW/usr/X11R6/bin/mwm -xrm "mwm*configFile: mymwmrc"\fR
++\f(CW/usr/bin/mwm -xrm "mwm*configFile: mymwmrc"\fR
  .fi
  .PP
  .SS "Resource Types"
@@ -77,3 +77,48 @@
  }";
  char builtinRootMenu[] = BUILTINROOTMENU
  #else /* MCCABE */
+--- motif-2.3.8/clients/mwm/system.mwmrc.orig	2018-05-12 13:34:25.881753933 +0200
++++ motif-2.3.8/clients/mwm/system.mwmrc	2018-05-12 13:34:28.888420566 +0200
+@@ -42,12 +42,14 @@
+ Menu DefaultRootMenu
+ {
+ 	"Root Menu"		f.title
+-	"New Window"		f.exec "xterm &"
++	"New Shell"		f.exec "xterm &"
+ 	"Shuffle Up"		f.circle_up
+ 	"Shuffle Down"		f.circle_down
+ 	"Refresh"		f.refresh
+ 	"Pack Icons"		f.pack_icons
+-!	"Toggle Behavior..."	f.set_behavior
++	"Toggle Behavior..."	f.set_behavior
++	 no-label		f.separator
++	"Programs"		f.menu Programs
+ 	 no-label		f.separator
+ 	"Restart..."		f.restart
+ 	"Quit..."		f.quit_mwm
+@@ -57,12 +59,12 @@
+ Menu RootMenu_1.1
+ {
+ 	"Root Menu"		f.title
+-	"New Window"		f.exec "xterm &"
++	"New Shell"		f.exec "xterm &"
+ 	"Shuffle Up"		f.circle_up
+ 	"Shuffle Down"		f.circle_down
+ 	"Refresh"		f.refresh
+ !	"Pack Icons"		f.pack_icons
+-!	"Toggle Behavior"	f.set_behavior
++	"Toggle Behavior"	f.set_behavior
+ 	no-label		f.separator
+ 	"Restart..."		f.restart
+ }
+--- motif-2.3.8/configure.ac.orig	2018-05-12 08:51:02.568614749 +0200
++++ motif-2.3.8/configure.ac	2018-05-12 20:30:26.611468928 +0200
+@@ -175,7 +175,7 @@
+ LIBDIR="${libdir}/X11"
+ AC_SUBST(LIBDIR)
+ 
+-MWMRCDIR="${libdir}/X11"
++MWMRCDIR="/etc/X11/mwm"
+ AC_SUBST(MWMRCDIR)
+ 
+ INCDIR="${includedir}/X11"

@@ -7,21 +7,19 @@
 Summary:	Motif toolkit
 Summary(pl.UTF-8):	Toolkit Motif
 Name:		motif
-Version:	2.3.4
-Release:	6
+Version:	2.3.8
+Release:	1
 License:	LGPL v2.1
 Group:		X11/Libraries
-Source0:	http://downloads.sourceforge.net/motif/%{name}-%{version}-src.tgz
-# Source0-md5:	612bb8127d0d31da6e5474edf8a5c247
-Source2:	mwmrc
-Source5:	mwm-xsession.desktop
-Source6:	ac_find_%{name}.m4
-Patch0:		%{name}-makedepend.patch
-Patch1:		%{name}-mwmrc.patch
-Patch2:		%{name}-bison.patch
-Patch3:		%{name}-freetype.patch
-Patch4:		%{name}-parbuild.patch
-Patch5:		format-security.patch
+Source0:	http://downloads.sourceforge.net/motif/%{name}-%{version}.tar.gz
+# Source0-md5:	7572140bb52ba21ec2f0c85b2605e2b1
+Source1:	mwm-xsession.desktop
+Source2:	ac_find_%{name}.m4
+Patch0:		%{name}-mwmrc.patch
+Patch1:		%{name}-bison.patch
+Patch2:		%{name}-freetype.patch
+Patch3:		%{name}-parbuild.patch
+Patch4:		format-security.patch
 URL:		http://motif.ics.com/
 BuildRequires:	autoconf >= 2.59-9
 BuildRequires:	automake
@@ -181,7 +179,6 @@ stare programy mogą z nimi działać).
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
-%patch5 -p1
 
 %build
 %{__libtoolize}
@@ -192,12 +189,12 @@ stare programy mogą z nimi działać).
 %{__autoconf}
 
 %configure \
+	--enable-jpeg \
+	--enable-png \
 	--enable-shared \
 	--enable-static \
 	--enable-themes \
 	--enable-xft \
-	--enable-jpeg \
-	--enable-png \
 	--with-fontconfig-config="pkg-config fontconfig"
 
 %{__make} clean
@@ -214,19 +211,20 @@ install -d $RPM_BUILD_ROOT{%{_examplesdir}/motif,%{_datadir}/xsessions} \
 	bindir=%{_bindir} \
 	binddir=%{xlibdir}/bindings
 
+# improperly installed man pagages for some demos
+%{__rm} $RPM_BUILD_ROOT%{_mandir}/manm/{exm_in_c,simpleDemo}.man
+
 cd demos
 # breaks -bi --short-circuit !
 %{__make} clean
 cp -a * $RPM_BUILD_ROOT%{_examplesdir}/motif
 %{__rm} -r $RPM_BUILD_ROOT%{_datadir}/Xm
 cd ..
-mv -f $RPM_BUILD_ROOT%{_bindir}/{,motif-}column
-mv -f $RPM_BUILD_ROOT%{_bindir}/{,motif-}tree
+%{__mv} $RPM_BUILD_ROOT%{_bindir}/{,motif-}column
+%{__mv} $RPM_BUILD_ROOT%{_bindir}/{,motif-}tree
 
-install %{SOURCE2} $RPM_BUILD_ROOT%{_sysconfdir}/X11/mwm/system.mwmrc
-
-install %{SOURCE5} $RPM_BUILD_ROOT%{_datadir}/xsessions/mwm.desktop
-install %{SOURCE6} $RPM_BUILD_ROOT%{_aclocaldir}
+install %{SOURCE1} $RPM_BUILD_ROOT%{_datadir}/xsessions/mwm.desktop
+install %{SOURCE2} $RPM_BUILD_ROOT%{_aclocaldir}
 
 cd $RPM_BUILD_ROOT%{_libdir}
 ln -sf libXm.so.*.*.* libXm.so.3
@@ -236,8 +234,8 @@ ln -sf libXm.so.*.*.* libXm.so.1
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%post	libs	-p /sbin/ldconfig
-%postun	libs	-p /sbin/ldconfig
+%post	libs -p /sbin/ldconfig
+%postun	libs -p /sbin/ldconfig
 
 %files
 %defattr(644,root,root,755)
@@ -312,6 +310,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/combo
 %attr(755,root,root) %{_bindir}/draw
 %attr(755,root,root) %{_bindir}/earth
+%attr(755,root,root) %{_bindir}/exm_in_c
 %attr(755,root,root) %{_bindir}/ext18list
 %attr(755,root,root) %{_bindir}/filemanager
 %attr(755,root,root) %{_bindir}/fileview
