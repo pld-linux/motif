@@ -1,7 +1,8 @@
---- openMotif-2.3.0/configure.ac.orig	2004-03-03 10:21:33.000000000 +0000
-+++ openMotif-2.3.0/configure.ac	2004-07-24 23:57:51.015614270 +0000
-@@ -32,9 +32,9 @@
- AM_PROG_LIBTOOL
+diff -urNp -x '*.orig' motif-2.3.8.org/configure.ac motif-2.3.8/configure.ac
+--- motif-2.3.8.org/configure.ac	2023-12-08 22:45:00.669224607 +0100
++++ motif-2.3.8/configure.ac	2023-12-08 22:45:00.874227241 +0100
+@@ -40,9 +40,9 @@ AM_PROG_LIBTOOL
+ 
  AC_EXEEXT
  
 -dnl AC_PROG_YACC
@@ -10,5 +11,5 @@
 -AC_CHECK_PROGS(YACC, byacc, yacc)
 +dnl AC_CHECK_PROGS(YACC, byacc, yacc)
  
- AM_PROG_LEX
- AC_PROG_INSTALL
+ dnl AC_PROG_SPLINT
+ AC_CHECK_PROGS(SPLINT, splint)

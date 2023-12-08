@@ -1,6 +1,7 @@
---- openmotif-2.3.0/ac_find_xft.m4.orig	2007-11-27 15:01:28.000000000 +0100
-+++ openmotif-2.3.0/ac_find_xft.m4	2007-11-27 15:03:36.000000000 +0100
-@@ -75,7 +75,12 @@
+diff -urNp -x '*.orig' motif-2.3.8.org/ac_find_xft.m4 motif-2.3.8/ac_find_xft.m4
+--- motif-2.3.8.org/ac_find_xft.m4	2017-03-28 00:24:31.000000000 +0200
++++ motif-2.3.8/ac_find_xft.m4	2023-12-08 22:45:43.438774053 +0100
+@@ -75,7 +75,12 @@ saved_LIBS="$LIBS"
  LIBS="$LIBS $freetype_lib"
  saved_CPPFLAGS="$CPPFLAGS"
  CPPFLAGS="$CPPFLAGS $FREETYPE_CFLAGS"
@@ -12,5 +13,5 @@
 +		    freetype/ftnames.h \
 +		    )
  
- LT_HAVE_FREETYPE="no"
+ FINDXFT_HAVE_FREETYPE="no"
  case "$ac_cv_header_freetype_freetype_h" in
