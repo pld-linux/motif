@@ -1,0 +1,23 @@
+--- motif-2.3.8/tools/wml/wmlparse.y.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/tools/wml/wmlparse.y	2024-08-25 14:17:25.794975114 +0200
+@@ -38,6 +38,8 @@
+ #if defined(__STDC__)
+ #include <string.h>		/* for strcpy() */
+ #endif
++int yylex (void);
++int yyerror (char *);
+ 
+ #ifndef XmConst
+ #if defined(__STDC__) || !defined( NO_CONST )
+--- motif-2.3.8/tools/wml/Uil.y.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/tools/wml/Uil.y	2024-08-25 14:26:49.569284639 +0200
+@@ -43,6 +43,9 @@
+ #include "UilDefI.h"
+ #include "UilCompGl.h"
+ 
++int yylex (void);
++int yyerror (char *);
++
+ #define		YYSTYPE		yystype
+ 
+ #define		YYDEBUG		1

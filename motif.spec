@@ -20,6 +20,8 @@ Patch1:		%{name}-bison.patch
 Patch2:		%{name}-freetype.patch
 Patch3:		%{name}-parbuild.patch
 Patch4:		format-security.patch
+Patch5:		includes.patch
+Patch6:		yacc.patch
 URL:		http://motif.ics.com/
 BuildRequires:	autoconf >= 2.59-9
 BuildRequires:	automake
@@ -179,6 +181,8 @@ stare programy mogą z nimi działać).
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
+%patch5 -p1
+%patch6 -p1
 
 %build
 %{__libtoolize}

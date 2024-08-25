@@ -1,0 +1,20 @@
+--- motif-2.3.8/lib/Xm/XpmI.h.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Xm/XpmI.h	2024-08-25 13:38:11.910672625 +0200
+@@ -122,6 +122,7 @@
+ #include <sys/types.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
+ #include <limits.h>
+ #include <X11/Xmd.h>
+ /* stdio.h doesn't declare popen on a Sequent DYNIX OS */
+--- motif-2.3.8/demos/unsupported/xmform/xmform.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/unsupported/xmform/xmform.c	2024-08-25 14:37:19.025226804 +0200
+@@ -54,6 +54,7 @@
+ #include <Xm/Form.h>
+ #include <Xm/PushB.h>
+ #include <Xm/ArrowB.h>
++#include <stdlib.h>
+ 
+ static void FillItPlease();
+ static void NearlyEvenSpread();
