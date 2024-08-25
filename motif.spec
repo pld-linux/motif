@@ -4,6 +4,9 @@
 # when stable version somes out everything would need to be recompiled
 # using ,,stable soname''. Check out CURRENT= in configure.{in,ac}.
 #
+# Conditional build:
+%bcond_without	static_libs	# static libraries
+
 Summary:	Motif toolkit
 Summary(pl.UTF-8):	Toolkit Motif
 Name:		motif
@@ -34,6 +37,7 @@ BuildRequires:	libpng-devel >= 2:1.4.0
 BuildRequires:	libtool
 BuildRequires:	libuuid-devel
 BuildRequires:	pkgconfig
+BuildRequires:	rpmbuild(macros) >= 1.527
 BuildRequires:	xorg-data-xbitmaps
 BuildRequires:	xorg-lib-libX11-devel
 BuildRequires:	xorg-lib-libXext-devel
@@ -196,7 +200,7 @@ stare programy mogą z nimi działać).
 	--enable-jpeg \
 	--enable-png \
 	--enable-shared \
-	--enable-static \
+	%{__enable_disable static_libs static} \
 	--enable-themes \
 	--enable-xft \
 	--with-fontconfig-config="pkg-config fontconfig"
@@ -297,11 +301,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/WML.5*
 %{_aclocaldir}/ac_find_motif.m4
 
+%if %{with static_libs}
 %files static
 %defattr(644,root,root,755)
 %{_libdir}/libMrm.a
 %{_libdir}/libUil.a
 %{_libdir}/libXm.a
+%endif
 
 %files demos
 %defattr(644,root,root,755)
