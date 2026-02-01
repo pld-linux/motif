@@ -81,6 +81,15 @@
      char * str;
  
      if (globals.block == BlockAll) {
+@@ -794,7 +794,7 @@ WidgetInfo *info;
+ 
+     register int count;
+     register Widget parent;
+-    register unsigned long * child;
++    register CARD64 * child;
+ 
+     for (top = w; XtParent(top) != NULL; top = XtParent(top)) {}
+ 
 --- motif-2.3.8/lib/Mrm/Mrm.h.orig	2017-08-17 02:38:43.000000000 +0200
 +++ motif-2.3.8/lib/Mrm/Mrm.h	2026-01-31 09:44:32.909909570 +0100
 @@ -246,8 +246,8 @@ typedef struct {
