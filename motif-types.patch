@@ -1,0 +1,2153 @@
+--- motif-2.3.8/config/util/makestrs.c.orig	2016-06-11 00:48:26.000000000 +0200
++++ motif-2.3.8/config/util/makestrs.c	2026-01-31 08:52:02.439529603 +0100
+@@ -238,7 +238,7 @@ WriteHeader (char* tagline, File* phile,
+     char* tmp;
+     Table* t;
+     TableEnt* te;
+-    static void (*headerproc[])() = { DefaultWriteHeader, ArrayperWriteHeader,
++    static void (*headerproc[])(FILE *, File *) = { DefaultWriteHeader, ArrayperWriteHeader,
+ 	                                  IntelABIWriteHeader, IntelABIWriteHeader,
+ 	                                  SPARCABIWriteHeader, FunctionWriteHeader };
+ 
+@@ -404,7 +404,7 @@ DefaultWriteSource (int abi)
+ static void
+ WriteSource(char* tagline, int abi)
+ {
+-    static void (*sourceproc[])() = { 
++    static void (*sourceproc[])(int) = { 
+ 	DefaultWriteSource, ArrayperWriteSource,
+ 	IntelABIWriteSource, IntelABIBCWriteSource,
+ 	DefaultWriteSource, FunctionWriteSource };
+--- motif-2.3.8/lib/Xm/Xpmscan.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/lib/Xm/Xpmscan.c	2026-01-31 09:05:01.563744091 +0100
+@@ -91,11 +91,11 @@ LFUNC(GetImagePixels8, int, (XImage *ima
+ 
+ LFUNC(GetImagePixels1, int, (XImage *image, unsigned int width,
+ 			     unsigned int height, PixelsMap *pmap,
+-			     int (*storeFunc) ()));
++			     int (*storeFunc) (Pixel, PixelsMap *, unsigned int *)));
+ #else  /* ndef FOR_MSW */
+ LFUNC(MSWGetImagePixels, int, (Display *d, XImage *image, unsigned int width,
+ 			       unsigned int height, PixelsMap *pmap,
+-			       int (*storeFunc) ()));
++			       int (*storeFunc) (Pixel, PixelsMap *, unsigned int *)));
+ #endif
+ LFUNC(ScanTransparentColor, int, (XpmColor *color, unsigned int cpp,
+ 				  XpmAttributes *attributes));
+@@ -837,7 +837,7 @@ GetImagePixels1(image, width, height, pm
+     unsigned int width;
+     unsigned int height;
+     PixelsMap *pmap;
+-    int (*storeFunc) ();
++    int (*storeFunc) (Pixel, PixelsMap *, unsigned int *);
+ {
+     unsigned int *iptr;
+     unsigned int x, y;
+--- motif-2.3.8/lib/Xm/EditresCom.c.orig	2016-03-16 20:51:57.000000000 +0100
++++ motif-2.3.8/lib/Xm/EditresCom.c	2026-01-31 09:23:17.819674809 +0100
+@@ -146,16 +146,16 @@ static Atom res_editor_command, res_edit
+ 
+ static Globals globals;
+ 
+-static void SendFailure(), SendCommand(), InsertWidget(), ExecuteCommand();
+-static void FreeEvent(), ExecuteSetValues(), ExecuteGetGeometry();
+-static void ExecuteGetResources();
+-
+-static void GetCommand();
+-static void LoadResources();
+-static Boolean IsChild();
+-static void DumpChildren();
+-static char *DumpWidgets(), *DoSetValues(), *DoFindChild();
+-static char *DoGetGeometry(), *DoGetResources(), *DumpValues();
++static void SendFailure(Widget, Atom, ResIdent, char *), SendCommand(Widget, Atom, ResIdent, EditresCommand, ProtocolStream *), InsertWidget(ProtocolStream *, Widget), ExecuteCommand(Widget, Atom, ResIdent, EditresEvent *);
++static void FreeEvent(EditresEvent *), ExecuteSetValues(Widget, SetValuesEvent *, WidgetInfo *, ProtocolStream *, unsigned short *), ExecuteGetGeometry(Widget, ProtocolStream *);
++static void ExecuteGetResources(Widget, ProtocolStream *);
++
++static void GetCommand(Widget, XtPointer, Atom *, Atom *, XtPointer, unsigned long *, int *);
++static void LoadResources(Widget);
++static Boolean IsChild(Widget, Widget, Widget);
++static void DumpChildren(Widget, ProtocolStream *, unsigned short *);
++static char *DumpWidgets(Widget, EditresEvent *, ProtocolStream *), *DoSetValues(Widget, EditresEvent *, ProtocolStream *), *DoFindChild(Widget, EditresEvent *, ProtocolStream *);
++static char *DoGetGeometry(Widget, EditresEvent *, ProtocolStream *), *DoGetResources(Widget, EditresEvent *, ProtocolStream *), *DumpValues(Widget, EditresEvent *, ProtocolStream *);
+ 
+ #ifndef HAVE_XMU_N_COPY_ISO
+ void _XmNCopyISOLatin1Lowered(char *dst, char *src, int size)
+@@ -491,7 +491,7 @@ Atom sel;
+ ResIdent ident;
+ EditresEvent * event;
+ {
+-    char * (*func)();
++    char * (*func)(Widget, EditresEvent *, ProtocolStream *);
+     char * str;
+ 
+     if (globals.block == BlockAll) {
+--- motif-2.3.8/lib/Mrm/Mrm.h.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Mrm/Mrm.h	2026-01-31 09:44:32.909909570 +0100
+@@ -246,8 +246,8 @@ typedef struct {
+ 	MrmType		type ;		/* resource type */
+ 	MrmCode		access ;	/* URMaPrivate or URMaPublic */
+ 	MrmCode		lock ;		/* resource locking code */
+-	char		*((*alloc_func) ()) ;	/* memory allocation func */
+-	void		(*free_func) () ;	/* deallocation func */
++	char		*((*alloc_func) (Cardinal)) ;	/* memory allocation func */
++	void		(*free_func) (char *) ;	/* deallocation func */
+ 	MrmFlag		byte_swapped ;	/* resource is byte_swapped */
+ } URMResourceContext, *URMResourceContextPtr ;
+ 
+@@ -376,11 +376,11 @@ typedef struct _WCIClassDesc {
+ 	String		creator_name ;	/* create routine name. This is also
+ 					   the accessor key for non-toolkit
+ 					   widget classes. */
+-	Widget		(*creator) () ;	/* low-level create routine. This is
++	Widget		(*creator) (Widget, String, ArgList, Cardinal) ;	/* low-level create routine. This is
+ 					   also the class identifier (name)
+ 					   used to match user classes. */
+ 	WidgetClass	class_record ;	/* Pointer to toolkit class record */
+-	void		(*cleanup) () ;
++	void		(*cleanup) (void *) ;
+ 					/* low-level destructor routine.
+ 					   Used to clean up after creation
+ 					   routines that leave dangling
+@@ -1249,8 +1249,8 @@ typedef struct {
+ #include "IDB.h"			/* needed for prototype definitions */
+ 
+ /* mrmcontext.c */
+-extern Cardinal UrmGetResourceContext  _ARGUMENTS(( char *((*alloc_func )()), 
+-						    void (*free_func )(), 
++extern Cardinal UrmGetResourceContext  _ARGUMENTS(( char *((*alloc_func )(Cardinal)), 
++						    void (*free_func )(char *), 
+ 						    MrmSize size , 
+ 						    URMResourceContextPtr *context_id_return ));
+ extern Cardinal UrmResizeResourceContext  _ARGUMENTS(( URMResourceContextPtr context_id , 
+--- motif-2.3.8/lib/Mrm/MrmDecls.h.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Mrm/MrmDecls.h	2026-01-31 15:07:56.097992992 +0100
+@@ -193,10 +193,10 @@ extern Cardinal MrmRegisterNamesInHierar
+ 
+ #if defined(__cplusplus) || defined(c_plusplus)
+ extern Cardinal MrmRegisterClass  _ARGUMENTS(( int class_code , String class_name , String create_name , Widget (*creator )(...), WidgetClass class_record ));
+-extern Cardinal MrmRegisterClassWithCleanup  _ARGUMENTS(( int class_code , String class_name , String create_name , Widget (*creator )(), WidgetClass class_record, void (*cleanup)(...) ));
++extern Cardinal MrmRegisterClassWithCleanup  _ARGUMENTS(( int class_code , String class_name , String create_name , Widget (*creator )(...), WidgetClass class_record, void (*cleanup)(...) ));
+ #else
+-extern Cardinal MrmRegisterClass  _ARGUMENTS(( int class_code , String class_name , String create_name , Widget (*creator )(), WidgetClass class_record ));
+-extern Cardinal MrmRegisterClassWithCleanup  _ARGUMENTS(( int class_code , String class_name , String create_name , Widget (*creator )(), WidgetClass class_record, void (*cleanup)() ));
++extern Cardinal MrmRegisterClass  _ARGUMENTS(( int class_code , String class_name , String create_name , Widget (*creator )(Widget, String, ArgList, Cardinal), WidgetClass class_record ));
++extern Cardinal MrmRegisterClassWithCleanup  _ARGUMENTS(( int class_code , String class_name , String create_name , Widget (*creator )(Widget, String, ArgList, Cardinal), WidgetClass class_record, void (*cleanup)(void *) ));
+ #endif
+ 
+ #else
+@@ -205,8 +205,8 @@ extern Cardinal MrmOpenHierarchy  _ARGUM
+ extern Cardinal MrmOpenHierarchyPerDisplay  _ARGUMENTS(( Display *display , MrmCount num_files , String *name_list , MrmOsOpenParamPtr *os_ext_list , MrmHierarchy *hierarchy_id_return ));
+ extern Cardinal MrmRegisterNames  _ARGUMENTS(( MrmRegisterArglist reglist ,MrmCount num_reg ));
+ extern Cardinal MrmRegisterNamesInHierarchy  _ARGUMENTS(( MrmHierarchy hierarchy_id , MrmRegisterArglist reglist , MrmCount num_reg ));
+-extern Cardinal MrmRegisterClass  _ARGUMENTS(( MrmType class_code , String class_name , String create_name , Widget (*creator )(), WidgetClass class_record ));
+-extern Cardinal MrmRegisterClassWithCleanup  _ARGUMENTS(( MrmType class_code , String class_name , String create_name , Widget (*creator )(), WidgetClass class_record, void (*cleanup)() ));
++extern Cardinal MrmRegisterClass  _ARGUMENTS(( MrmType class_code , String class_name , String create_name , Widget (*creator )(Widget, String, ArgList, Cardinal), WidgetClass class_record ));
++extern Cardinal MrmRegisterClassWithCleanup  _ARGUMENTS(( MrmType class_code , String class_name , String create_name , Widget (*creator )(Widget, String, ArgList, Cardinal), WidgetClass class_record, void (*cleanup)(void *) ));
+ 
+ #endif 
+ 
+--- motif-2.3.8/lib/Mrm/Mrmcontext.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Mrm/Mrmcontext.c	2026-01-31 09:45:36.383586507 +0100
+@@ -109,8 +109,8 @@ static char rcsid[] = "$XConsortium: Mrm
+  */
+ 
+ Cardinal 
+-UrmGetResourceContext (char			*((*alloc_func) ()),
+-		       void			(*free_func) (),
++UrmGetResourceContext (char			*((*alloc_func) (Cardinal)),
++		       void			(*free_func) (char *),
+ 		       MrmSize			size,
+ 		       URMResourceContextPtr	*context_id_return)
+ {
+@@ -139,7 +139,7 @@ UrmGetResourceContext (char			*((*alloc_
+       (*context_id_return)->data_buffer = (char *) (*alloc_func) (size) ;
+       if ( (*context_id_return)->data_buffer == NULL )
+         {
+-	  (*free_func) (*context_id_return) ;
++	  (*free_func) ((char *) *context_id_return) ;
+ 	  return Urm__UT_Error ("UrmGetResourceContext", _MrmMMsg_0001,
+ 				NULL, *context_id_return, MrmFAILURE) ;
+         }
+@@ -300,7 +300,7 @@ UrmFreeResourceContext (URMResourceConte
+   context_id->validation = 0 ;
+   if ( context_id->data_buffer != NULL )
+     (*(context_id->free_func)) (context_id->data_buffer) ;
+-  (*(context_id->free_func)) (context_id) ;
++  (*(context_id->free_func)) ((char *) context_id) ;
+   return MrmSUCCESS ;
+ 
+ }
+--- motif-2.3.8/lib/Mrm/Mrmhier.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Mrm/Mrmhier.c	2026-01-31 14:02:58.723676098 +0100
+@@ -295,10 +295,10 @@ Urm__OpenHierarchy (MrmCount			num_files
+        */
+       cur_file->class_ctable = NULL;
+       cur_file->resource_ctable = NULL;
+-      result = UrmGetResourceContext ((char *(*)())NULL, (void(*)())NULL,
++      result = UrmGetResourceContext (NULL, NULL,
+ 				      0, &class_ctx);
+       if ( result != MrmSUCCESS ) return result;
+-      result = UrmGetResourceContext ((char *(*)())NULL, (void(*)())NULL,
++      result = UrmGetResourceContext (NULL, NULL,
+ 				      0, &resource_ctx);
+       if ( result != MrmSUCCESS ) return result;
+       result = UrmGetIndexedLiteral (cur_file, UilMrmClassTableIndex, 
+--- motif-2.3.8/lib/Mrm/Mrminit.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Mrm/Mrminit.c	2026-01-31 15:09:30.848501187 +0100
+@@ -546,11 +546,11 @@ void MrmInitialize (void)
+ 
+   MrmRegisterClassWithCleanup
+     (0, NULL, "_XmCreateRenderTable", _XmCreateRenderTable,
+-     (WidgetClass)NULL, XmRenderTableFree);
++     (WidgetClass)NULL, (void (*)(void *))XmRenderTableFree);
+ 
+   MrmRegisterClassWithCleanup
+     (0, NULL, "_XmCreateRendition", _XmCreateRendition,
+-     (WidgetClass)NULL, XmRenditionFree);
++     (WidgetClass)NULL, (void (*)(void *))XmRenditionFree);
+ 
+   MrmRegisterClass
+     (0, NULL, "_XmCreateTabList", _XmCreateTabList,
+--- motif-2.3.8/lib/Mrm/Mrmlread.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Mrm/Mrmlread.c	2026-01-31 15:20:55.538840836 +0100
+@@ -259,7 +259,7 @@ MrmFetchLiteral (MrmHierarchy		hierarchy
+   /*
+    * Read the literal, discard the context, and return.
+    */
+-  UrmGetResourceContext ((char *(*)())NULL, (void(*)())NULL, 0, &context_id);
++  UrmGetResourceContext (NULL, NULL, 0, &context_id);
+   result = Urm__FetchLiteral (hierarchy_id, index, context_id, &ctxlist);
+   if ( result == MrmSUCCESS )
+     {
+@@ -349,7 +349,7 @@ MrmFetchLiteral (MrmHierarchy		hierarchy
+ 	      /*
+ 	       * Only free the context id in all other cases
+ 	       */
+-	      (*(context_id->free_func)) (context_id) ;
++	      (*(context_id->free_func)) ((char *)context_id) ;
+ 	      break;
+ 	    }
+ 
+@@ -367,7 +367,7 @@ MrmFetchLiteral (MrmHierarchy		hierarchy
+     }
+   else
+     {
+-      (*(context_id->free_func)) (context_id) ;
++      (*(context_id->free_func)) ((char *)context_id) ;
+       _MrmAppUnlock(app);
+       _MrmProcessUnlock();
+       return result;
+@@ -431,7 +431,7 @@ MrmFetchIconLiteral (MrmHierarchy
+   /*
+    * Read the literal, and deal with errors
+    */
+-  UrmGetResourceContext ((char *(*)())NULL, (void(*)())NULL, 0, &context_id);
++  UrmGetResourceContext (NULL, NULL, 0, &context_id);
+   result = Urm__FetchLiteral (hierarchy_id, index, context_id, &ctxlist);
+   if ( result == MrmSUCCESS ) {
+     type = UrmRCType(context_id);
+@@ -537,7 +537,7 @@ MrmFetchBitmapLiteral (MrmHierarchy
+   /*
+    * Read the literal, and deal with errors
+    */
+-  UrmGetResourceContext ((char *(*)())NULL, (void(*)())NULL, 0, &context_id);
++  UrmGetResourceContext (NULL, NULL, 0, &context_id);
+   result = Urm__FetchLiteral (hierarchy_id, index, context_id, &ctxlist);
+   if ( result == MrmSUCCESS ) {
+     type = UrmRCType(context_id);
+@@ -647,7 +647,7 @@ MrmFetchColorLiteral (MrmHierarchy
+   /*
+    * Read the literal, and deal with errors.
+    */
+-  UrmGetResourceContext ((char *(*)())NULL, (void(*)())NULL, 0, &context_id);
++  UrmGetResourceContext (NULL, NULL, 0, &context_id);
+   result = Urm__FetchLiteral (hierarchy_id, index, context_id, &ctxlist);
+   if ( result == MrmSUCCESS )
+     if (UrmRCType(context_id) != MrmRtypeColor)
+--- motif-2.3.8/lib/Mrm/Mrmwci.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Mrm/Mrmwci.c	2026-01-31 15:25:26.956963696 +0100
+@@ -149,7 +149,7 @@ MrmRegisterClass (
+ #endif 
+ 		  String		class_name, /* unused */
+ 		  String		create_name,
+-		  Widget		(* creator) (),
++		  Widget		(* creator) (Widget, String, ArgList, Cardinal),
+ 		  WidgetClass		class_record)
+ {
+   Cardinal	status = MrmRegisterClassWithCleanup(
+@@ -169,9 +169,9 @@ MrmRegisterClassWithCleanup (
+ #endif 
+ 		  String		class_name, /* unused */
+ 		  String		create_name,
+-		  Widget		(* creator) (),
++		  Widget		(* creator) (Widget, String, ArgList, Cardinal),
+ 		  WidgetClass		class_record,
+-		  void			(* cleanup) ())
++		  void			(* cleanup) (void *))
+ {
+   /*
+    *  Local variables
+--- motif-2.3.8/lib/Mrm/Mrmwcrw.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Mrm/Mrmwcrw.c	2026-01-31 15:35:33.116879882 +0100
+@@ -165,7 +165,7 @@ UrmCreateWidgetInstanceCleanup (URMResou
+ 				     &cldesc) ;
+       if ( result != MrmSUCCESS ) return result ;
+ 
+-      if (NULL != cldesc->cleanup) (*(cldesc->cleanup)) (child) ;
++      if (NULL != cldesc->cleanup) (*(cldesc->cleanup)) ((void *)child) ;
+     }
+   else if (widgetrec->variety != UilMrmAutoChildVariety)
+     return Urm__UT_Error("UrmCreateWidgetInstanceCleanup", _MrmMMsg_0055,
+@@ -282,7 +282,7 @@ UrmCreateWidgetTree (URMResourceContextP
+   widgetrec = (RGMWidgetRecordPtr) UrmRCBuffer (context_id) ;
+   if ( widgetrec->children_offs > 0) 
+     {
+-      UrmGetResourceContext ((char *(*)())NULL, (void(*)())NULL, 0, &child_ctx);
++      UrmGetResourceContext (NULL, NULL, 0, &child_ctx);
+       childrendesc =
+ 	(RGMChildrenDescPtr)((char *)widgetrec+widgetrec->children_offs);
+ 
+@@ -576,7 +576,7 @@ UrmCreateWidgetInstance (URMResourceCont
+   int			ndx ;		/* loop index */
+   RGMCallbackDescPtr	cbptr ;		/* creation callback descriptor */
+   RGMCallbackItemPtr	itmptr ;	/* current callback item */
+-  void			(* cb_rtn) () ;	/* current callback routine */
++  XtCallbackProc	cb_rtn ;	/* current callback routine */
+   /* BEGIN OSF Fix pir 1860, 2813 */
+   XmAnyCallbackStruct	cb_reason; 	/* creation callback reason */
+   /* END OSF Fix pir 1860, 2813 */
+@@ -679,8 +679,8 @@ UrmCreateWidgetInstance (URMResourceCont
+ 	  {
+             itmptr = &cbptr->item[ndx] ;
+ 
+-            cb_rtn = (void (*)()) itmptr->runtime.callback.callback ;
+-            if ( cb_rtn != (XtCallbackProc)NULL )
++            cb_rtn = itmptr->runtime.callback.callback ;
++            if ( cb_rtn != NULL )
+ 	      /* BEGIN OSF Fix pir 2813 */
+ 	      {
+ 		cb_reason.reason = MrmCR_CREATE;
+@@ -847,7 +847,7 @@ UrmSetWidgetInstance (URMResourceContext
+   int			ndx ;		/* loop index */
+   RGMCallbackDescPtr	cbptr ;		/* creation callback descriptor */
+   RGMCallbackItemPtr	itmptr ;	/* current callback item */
+-  void			(* cb_rtn) () ;	/* current callback routine */
++  XtCallbackProc	cb_rtn ;	/* current callback routine */
+   /* BEGIN OSF Fix pir 1860, 2813 */
+   XmAnyCallbackStruct	cb_reason; 	/* creation callback reason */
+   /* END OSF Fix pir 1860, 2813 */
+@@ -969,8 +969,8 @@ UrmSetWidgetInstance (URMResourceContext
+ 	  {
+             itmptr = &cbptr->item[ndx] ;
+ 
+-            cb_rtn = (void (*)()) itmptr->runtime.callback.callback ;
+-            if ( cb_rtn != (XtCallbackProc)NULL )
++            cb_rtn = itmptr->runtime.callback.callback ;
++            if ( cb_rtn != NULL )
+ 	      /* BEGIN OSF Fix pir 2813 */
+ 	      {
+ 		cb_reason.reason = MrmCR_CREATE;
+@@ -2908,7 +2908,7 @@ Urm__CW_ReadLiteral (RGMResourceDescPtr
+   /*
+    * Acquire a context and read the literal into it.
+    */
+-  UrmGetResourceContext ((char *(*)())NULL, (void(*)())NULL, 0, &context_id) ;
++  UrmGetResourceContext (NULL, NULL, 0, &context_id) ;
+   switch ( resptr->type )
+     {
+     case URMrIndex:
+@@ -3422,7 +3422,7 @@ Urm__CW_LoadWidgetResource (Widget			par
+    * Acquire a context, then load the widget and instantiate the tree.
+    * An HGet call may replace the file for private references.
+    */
+-  UrmGetResourceContext ((char *(*)())NULL, (void(*)())NULL, 0, &context_id) ;
++  UrmGetResourceContext (NULL, NULL, 0, &context_id) ;
+   switch ( resptr->type )
+     {
+     case URMrIndex:
+--- motif-2.3.8/lib/Mrm/Mrmwrefs.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/lib/Mrm/Mrmwrefs.c	2026-01-31 15:36:47.143942888 +0100
+@@ -95,7 +95,7 @@ Urm__CW_InitWRef (URMResourceContextPtr
+   /*
+    * Acquire and initialize resource context
+    */
+-  result = UrmGetResourceContext ((char *(*)())NULL,(void(*)())NULL, 
++  result = UrmGetResourceContext (NULL, NULL, 
+ 				  500, wref_id);
+   if ( result != MrmSUCCESS ) return result;
+ 
+--- motif-2.3.8/tools/wml/wml.h.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/tools/wml/wml.h	2026-01-31 16:10:45.938196828 +0100
+@@ -31,6 +31,7 @@
+ #else
+ #include <stdio.h>
+ #endif
++#include <stdint.h>
+ 
+ #define TRUE		1
+ #define FALSE		0
+@@ -631,17 +632,17 @@ extern DynamicHandleListDefPtr	wml_tok_i
+ /*
+  * Defined in wmlutils.c
+  */
+-extern char *wmlAllocateString ();		/* dynamic string copy */
+-extern void wmlUpperCaseString ();		/* convert to upper case */
+-extern void wmlInitHList ();			/* init dynamic list */
+-extern void wmlResizeHList ();			/* resize a list */
+-extern void wmlClearHList ();			/* clear a list for reuse */
+-extern int wmlFindInHList ();			/* find name in list */
+-extern void wmlInsertInHList ();		/* generic list insert */
+-extern void wmlInsertInKeyList ();		/* specialized list insert */
+-extern WmlClassResDefPtr wmlResolveResIsMember ();
++extern char *wmlAllocateString (char *);					/* dynamic string copy */
++extern void wmlUpperCaseString (char *);					/* convert to upper case */
++extern void wmlInitHList (DynamicHandleListDefPtr, int, int);			/* init dynamic list */
++extern void wmlResizeHList (DynamicHandleListDefPtr, int);			/* resize a list */
++extern void wmlClearHList (DynamicHandleListDefPtr);				/* clear a list for reuse */
++extern int wmlFindInHList (DynamicHandleListDefPtr, char *);			/* find name in list */
++extern void wmlInsertInHList (DynamicHandleListDefPtr, char *, ObjectPtr);	/* generic list insert */
++extern void wmlInsertInKeyList (DynamicHandleListDefPtr, char *, ObjectPtr);	/* specialized list insert */
++extern WmlClassResDefPtr wmlResolveResIsMember (WmlResourceDefPtr, WmlClassResDefPtr);
+ 						/* is resource in class? */
+-extern WmlClassChildDefPtr wmlResolveChildIsMember ();
++extern WmlClassChildDefPtr wmlResolveChildIsMember (WmlChildDefPtr, WmlClassChildDefPtr);
+ 						/* is child in class? */
+ 
+ /*
+@@ -650,27 +651,25 @@ extern WmlClassChildDefPtr wmlResolveChi
+ extern char		yystringval[];		/* any string value */
+ extern char		yynameval[];		/* any name (identifier) */
+ extern int		yytknval1;		/* terminal token value 1 */
+-extern int		yytknval2;		/* terminal token value 2 */
++extern intptr_t		yytknval2;		/* terminal token value 2 */
+ extern ObjectPtr	wml_cur_obj;		/* object being constructed */
+ extern ObjectPtr	wml_cur_subobj;		/* current subobject */
+-extern void wmlCreateClass ();
+-extern void wmlAddClassAttribute ();
+-extern void wmlAddClassResource ();
+-extern void wmlAddClassResourceAttribute ();
+-extern void wmlAddClassControl ();
+-extern void wmlAddCtrList ();
+-extern void wmlCreateResource ();
+-extern void wmlCreateDatatype ();
+-extern void wmlAddResourceAttribute ();
+-extern void wmlAddDatatypeAttribute ();
+-extern void wmlAddCtrListControl ();
+-extern void wmlCreateEnumSet ();
+-extern void wmlAddEnumSetValue ();
+-extern void wmlCreateEnumValue ();
+-extern void wmlAddEnumValueAttribute ();
+-extern void wmlCreateCharset ();
+-extern void wmlAddCharsetAttribute ();
+-extern void LexIssueError ();
++extern void wmlCreateClass (char *, int);
++extern void wmlAddClassAttribute (int, char *);
++extern void wmlAddClassResource (char *);
++extern void wmlAddClassResourceAttribute (int, char *);
++extern void wmlAddClassControl (char *);
++extern void wmlCreateResource (char *, int);
++extern void wmlCreateDatatype (char *);
++extern void wmlAddResourceAttribute (int, char *);
++extern void wmlAddDatatypeAttribute (int, char *);
++extern void wmlCreateEnumSet (char *, char *);
++extern void wmlAddEnumSetValue (char *);
++extern void wmlCreateEnumValue (char *);
++extern void wmlAddEnumValueAttribute (int, char *);
++extern void wmlCreateCharset (char *);
++extern void wmlAddCharsetAttribute (int, char *);
++extern void LexIssueError (int);
+ 
+ /*      May be, declaration of functions must be next:
+ extern void wmlAddClassChild ();
+@@ -689,22 +688,17 @@ extern void wmlAddCtrlListControl (char
+ /*
+  * Defined in wmlresolve.c
+  */
+-extern void wmlResolveDescriptors ();
+-extern void wmlMarkReferencePointers ();
++extern void wmlResolveDescriptors (void);
++extern void wmlMarkReferencePointers (WmlClassDefPtr);
+ 
+ 
+ /*
+  * Defined in wmlouth.c
+  */
+-extern void wmlOutputHFiles ();
++extern void wmlOutputHFiles (void);
+ 
+ 
+ /*
+- * Defined in wmloutdat.c
+- */
+-extern void wmlOutputDatFiles ();
+-
+-/*
+  * Define in wmloutp1 or wmloutp2
+  */
+-extern void wmlOutput ();
++extern void wmlOutput (void);
+--- motif-2.3.8/tools/wml/wmllex.l.orig	2017-03-28 00:24:31.000000000 +0200
++++ motif-2.3.8/tools/wml/wmllex.l	2026-01-31 16:17:57.693822758 +0100
+@@ -45,7 +45,7 @@
+ char            yystringval[BUF_SIZE];      /* any string value */
+ char            yynameval[BUF_SIZE];         /* any identifier (name) */
+ int             yytknval1;              /* terminal token value 1 */
+-int             yytknval2;              /* terminal token value 2 */
++intptr_t        yytknval2;              /* terminal token value 2 */
+ 
+ %}
+ 
+--- motif-2.3.8/tools/wml/wmlparse.y.orig	2026-01-31 15:47:08.493936247 +0100
++++ motif-2.3.8/tools/wml/wmlparse.y	2026-01-31 16:10:23.461410811 +0100
+@@ -309,7 +309,7 @@ class_attribute
+ 	| boolean_class_attribute_name
+ 	    EQUALS
+ 	    boolean_attribute_value
+-		{ wmlAddClassAttribute (yytknval1, yytknval2); }
++		{ wmlAddClassAttribute (yytknval1, (char *)yytknval2); }
+ 	    SEMICOLON
+ 	| class_resources SEMICOLON
+ 	| class_controls SEMICOLON
+@@ -382,7 +382,7 @@ class_resource_attribute_element
+ 	| boolean_class_resource_attribute_name
+ 	    EQUALS
+ 	    boolean_attribute_value
+-		{ wmlAddClassResourceAttribute (yytknval1, yytknval2); }
++		{ wmlAddClassResourceAttribute (yytknval1, (char *)yytknval2); }
+ 	    SEMICOLON
+ 	| error { LexIssueError(SEMICOLON); } SEMICOLON
+ 	;
+@@ -490,7 +490,7 @@ resource_attribute
+ 	| boolean_resource_resource_attribute_name
+ 	    EQUALS
+ 	    boolean_attribute_value
+-		{ wmlAddResourceAttribute (yytknval1, yytknval2); }
++		{ wmlAddResourceAttribute (yytknval1, (char *)yytknval2); }
+ 	    SEMICOLON
+ 	| error { LexIssueError(SEMICOLON); } SEMICOLON
+ 	;
+@@ -699,7 +699,7 @@ charset_attribute
+ 	| predefined_charset_attribute_name
+ 	    EQUALS
+ 	    predefined_charset_attribute_value
+-		{ wmlAddCharsetAttribute (yytknval1, yytknval2); }
++		{ wmlAddCharsetAttribute (yytknval1, (char *)yytknval2); }
+ 	    SEMICOLON
+ 	| error { LexIssueError(SEMICOLON); } SEMICOLON
+ 	;
+--- motif-2.3.8/tools/wml/wmloutkey.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/tools/wml/wmloutkey.c	2026-01-31 16:22:37.861977100 +0100
+@@ -60,22 +60,22 @@ static char rcsid[] = "$TOG: wmloutkey.c
+ /*
+  * Routines used only in this module
+  */
+-void wmlKeyWBuildTables ();
+-void wmlKeyWClassTokens ();
+-void wmlKeyWGrammarTokens ();
+-int wmlKeyWGrammarClass ();
+-void wmlKeyWArgTokens ();
+-void wmlKeyWReasonTokens ();
+-void wmlKeyWCharsetTokens ();
+-void wmlKeyWEnumvalTokens ();
+-void wmlKeyWChildTokens ();
+-void wmlKeyWMakeTokens ();
+-void wmlOutputUilKeyTab ();
+-void wmlOutputUilKeyTabBody ();
+-void wmlTokenClassString ();
+-void wmlTokenSymKString ();
+-void wmlTokenTokenString ();
+-void wmlOutputUilTokName ();
++void wmlKeyWBuildTables (void);
++void wmlKeyWClassTokens (void);
++void wmlKeyWGrammarTokens (void);
++int wmlKeyWGrammarClass (char *);
++void wmlKeyWArgTokens (void);
++void wmlKeyWReasonTokens (void);
++void wmlKeyWCharsetTokens (void);
++void wmlKeyWEnumvalTokens (void);
++void wmlKeyWChildTokens (void);
++void wmlKeyWMakeTokens (char *, int, ObjectPtr);
++void wmlOutputUilKeyTab (void);
++void wmlOutputUilKeyTabBody (FILE *, DynamicHandleListDefPtr, int *, int *);
++void wmlTokenClassString (char *, WmlKeyWTokenPtr);
++void wmlTokenSymKString (char *, WmlKeyWTokenPtr);
++void wmlTokenTokenString (char *, WmlKeyWTokenPtr);
++void wmlOutputUilTokName (void);
+ 
+ /*
+  * globals
+@@ -514,8 +514,8 @@ strcpy (insens_name, sens_name);
+ for ( ndx=0 ; ndx<(int)strlen(insens_name) ; ndx++ )
+     insens_name[ndx] = _upper (insens_name[ndx]);
+ 
+-wmlInsertInKeyList(wml_tok_sens_ptr, sens_name, senstok);
+-wmlInsertInKeyList(wml_tok_insens_ptr, insens_name, insenstok);
++wmlInsertInKeyList(wml_tok_sens_ptr, sens_name, (ObjectPtr)senstok);
++wmlInsertInKeyList(wml_tok_insens_ptr, insens_name, (ObjectPtr)insenstok);
+ }
+ 
+ 
+@@ -618,7 +618,7 @@ for ( ndx=0 ; ndx<tokvec->cnt ; ndx++ )
+     wmlTokenClassString (tkclass, tok);
+     wmlTokenSymKString (tksym, tok);
+     wmlTokenTokenString (tktoken, tok);
+-    fprintf (outfil, "    {%s, %s, %d, %s, \"%s\"},\n",
++    fprintf (outfil, "    {%s, %s, %zd, %s, \"%s\"},\n",
+ 	     tkclass,
+ 	     tksym,
+ 	     strlen(tokstg),
+--- motif-2.3.8/tools/wml/wmloutmm.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/tools/wml/wmloutmm.c	2026-01-31 20:58:27.857398218 +0100
+@@ -55,8 +55,8 @@ static char rcsid[] = "$XConsortium: wml
+ /*
+  * Routines used only in this module
+  */
+-void wmlOutputWmlUilMm ();
+-void wmlOutputWmlUilMmClass ();
++void wmlOutputWmlUilMm (void);
++void wmlOutputWmlUilMmClass (FILE *, WmlClassDefPtr, char *);
+ 
+ /*
+  * globals
+--- motif-2.3.8/tools/wml/wmlresolve.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/tools/wml/wmlresolve.c	2026-01-31 21:02:56.405504580 +0100
+@@ -57,34 +57,34 @@ static char rcsid[] = "$XConsortium: wml
+ /*
+  * Routines used only in this module
+  */
+-void wmlResolveGenerateSymK ();
+-void wmlResolveValidateClass ();
+-void wmlResolvePrintReport ();
+-
+-void wmlResolveSymKDataType ();
+-void wmlResolveSymKChild ();
+-void wmlResolveSymKEnumVal ();
+-void wmlResolveSymKEnumSet ();
+-void wmlResolveSymKReason ();
+-void wmlResolveSymKArgument ();
+-void wmlResolveSymKRelated ();
+-void wmlResolveSymKClass ();
+-void wmlResolveSymKCtrlList ();
+-void wmlResolveSymKCharSet ();
+-
+-void wmlResolveClassInherit ();
+-void wmlResolveClearRefPointers ();
+-void wmlResolveInitRefObj ();
+-void wmlResolveInitChildRefObj ();
+-
+-void wmlResolvePrintClass ();
+-void wmlResolvePrintClassArgs ();
+-void wmlResolvePrintClassReasons ();
+-
+-ObjectPtr wmlResolveFindObject ();
+-void wmlIssueReferenceError ();
+-void wmlIssueIllegalReferenceError ();
+-void wmlIssueError ();
++void wmlResolveGenerateSymK (void);
++void wmlResolveValidateClass (void);
++void wmlResolvePrintReport (void);
++
++void wmlResolveSymKDataType (void);
++void wmlResolveSymKChild (void);
++void wmlResolveSymKEnumVal (void);
++void wmlResolveSymKEnumSet (void);
++void wmlResolveSymKReason (void);
++void wmlResolveSymKArgument (void);
++void wmlResolveSymKRelated (void);
++void wmlResolveSymKClass (void);
++void wmlResolveSymKCtrlList (void);
++void wmlResolveSymKCharSet (void);
++
++void wmlResolveClassInherit (WmlClassDefPtr);
++void wmlResolveClearRefPointers (void);
++void wmlResolveInitRefObj (WmlClassResDefPtr, WmlClassResDefPtr);
++void wmlResolveInitChildRefObj (WmlClassChildDefPtr, WmlClassChildDefPtr);
++
++void wmlResolvePrintClass (FILE *, WmlClassDefPtr);
++void wmlResolvePrintClassArgs (FILE *, WmlClassDefPtr);
++void wmlResolvePrintClassReasons (FILE *, WmlClassDefPtr);
++
++ObjectPtr wmlResolveFindObject (char *, int, char *);
++void wmlIssueReferenceError (char *, char *);
++void wmlIssueIllegalReferenceError (char *, char *);
++void wmlIssueError (char *);
+ 
+ 
+ 
+--- motif-2.3.8/tools/wml/wmluiltok.l.orig	2017-03-28 00:24:31.000000000 +0200
++++ motif-2.3.8/tools/wml/wmluiltok.l	2026-01-31 21:03:52.169136807 +0100
+@@ -81,8 +81,8 @@ typedef struct _token
+ TokenRec token[1000];
+ TokenRec temp;
+ 
+-void add_token ();
+-int yywrap ();
++void add_token (Token);
++int yywrap (void);
+ 
+ int phase		= 0;
+ int keyword_count;
+--- motif-2.3.8/clients/mwm/WmGlobal.h.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/mwm/WmGlobal.h	2026-02-01 08:54:19.440836886 +0100
+@@ -457,7 +457,8 @@ typedef unsigned long Context;
+ typedef unsigned long Behavior;
+ typedef unsigned long GroupArg;
+ 
+-typedef Boolean (*WmFunction) ();
++typedef struct _ClientData ClientData;
++typedef Boolean (*WmFunction) (String, ClientData *, XEvent *);
+ 
+ #define NO_MODIFIER	0		/* value for state field */
+ 
+@@ -1704,7 +1705,7 @@ typedef struct _WmWorkspaceData *PtrWork
+  *
+  *************************************<->***********************************/
+ 
+-typedef struct _ClientData
++struct _ClientData
+ {
+     int		dataType;			/* client data type */
+ 
+@@ -1915,7 +1916,7 @@ typedef struct _ClientData
+ 
+     long	window_status;			/* used for Tear-off Menus */
+ 
+-} ClientData;
++};
+ 
+ typedef struct _ClientData *PtrClientData;
+ 
+--- motif-2.3.8/clients/mwm/WmEvent.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/mwm/WmEvent.c	2026-02-01 09:04:51.434319892 +0100
+@@ -71,7 +71,7 @@ static char rcsid[] = "$XConsortium: WmE
+ #endif /* PANELIST */
+ 
+ #include <Xm/RowColumnP.h> /* for MS_LastManagedMenuTime */
+-extern XmMenuState _XmGetMenuState();
++extern XmMenuState _XmGetMenuState(Widget);
+ 
+ #ifdef WSM
+ /*
+@@ -1262,7 +1262,7 @@ Boolean HandleKeyPress (XKeyEvent *keyEv
+ 		}
+ #endif /* ROOT_ICON_MENU */
+ 	      if (!(keySpecs->wmFunction (keySpecs->wmFuncArgs,
+-					  functionClient, keyEvent)))
++					  functionClient, (XEvent *)keyEvent)))
+ 		{
+ 		  /*
+ 		   * The window manager function return indicates that further
+@@ -1554,7 +1554,7 @@ Boolean CheckForButtonAction (XButtonEve
+ 		}
+ 
+ 	        if (!(buttonSpec->wmFunction (buttonSpec->wmFuncArgs, pCD,
+-					      buttonEvent)))
++					      (XEvent *)buttonEvent)))
+ 		{
+ 		    /*
+ 		     * The window manager function return indicates that
+--- motif-2.3.8/clients/mwm/WmFunction.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/mwm/WmFunction.c	2026-01-31 21:20:27.597803473 +0100
+@@ -1005,9 +1005,9 @@ Boolean F_Exec (String args, ClientData
+     int   pid;
+     int   w;
+ #ifndef WSM
+-    void (*intStat) ();
+-    void (*quitStat) ();
+-    void (*chldStat) ();
++    void (*intStat) (int);
++    void (*quitStat) (int);
++    void (*chldStat) (int);
+ #endif /* WSM */
+     char *shell;
+     char *shellname;
+@@ -1040,7 +1040,7 @@ Boolean F_Exec (String args, ClientData
+      * Moved before fork() to avoid race condition.
+      * Change handler to SIG_DFL, SIG_IGN causes bug. paulsh@sequent 31-08-95.
+      */
+-    chldStat = (void (*)())signal (SIGCHLD, SIG_DFL); 
++    chldStat = signal (SIGCHLD, SIG_DFL); 
+ #endif
+ 
+     /*
+@@ -1143,8 +1143,8 @@ Boolean F_Exec (String args, ClientData
+      */
+ 
+ #ifndef WSM
+-    intStat = (void (*)())signal (SIGINT, SIG_IGN);
+-    quitStat = (void (*)())signal (SIGQUIT, SIG_IGN);
++    intStat = signal (SIGINT, SIG_IGN);
++    quitStat = signal (SIGQUIT, SIG_IGN);
+ #endif /* WSM */
+ 
+ #ifdef WSM
+--- motif-2.3.8/clients/mwm/WmResCvt.c.orig	2026-01-31 21:22:44.618536686 +0100
++++ motif-2.3.8/clients/mwm/WmResCvt.c	2026-01-31 21:22:47.801887054 +0100
+@@ -61,8 +61,8 @@ static char rcsid[] = "$XConsortium: WmR
+  * Function Declarations:
+  */
+ 
+-unsigned char *NextToken ();
+-long           DecStrToL ();
++unsigned char *NextToken (unsigned char *, int *, unsigned char **);
++long           DecStrToL (unsigned char *, unsigned char **);
+ 
+ #include "WmResCvt.h"
+ 
+--- motif-2.3.8/clients/mwm/WmResParse.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/mwm/WmResParse.c	2026-02-01 09:25:13.561046683 +0100
+@@ -169,7 +169,7 @@ static MaskTableEntry modifierStrings[]
+     {"mod3",	Mod3Mask},
+     {"mod4",	Mod4Mask},
+     {"mod5",	Mod5Mask},
+-    {NULL,      (unsigned int)NULL},
++    {NULL,      0},
+ };
+ 
+ #define ALT_INDEX 3
+@@ -178,7 +178,7 @@ static MaskTableEntry modifierStrings[]
+ typedef struct {
+    char         *event;
+    unsigned int  eventType;
+-   Boolean       (*parseProc)();
++   Boolean       (*parseProc)(unsigned char **, unsigned int, unsigned int *);
+    unsigned int  closure;
+    Boolean       fClick;
+ } EventTableEntry;
+@@ -332,14 +332,14 @@ static EventTableEntry buttonEvents[] =
+     {"btn5up",      ButtonRelease,  ParseImmed,    Button5,  FALSE},
+     {"btn5click",   ButtonRelease,  ParseImmed,    Button5,  TRUE},
+     {"btn5click2",  ButtonPress,    ParseImmed,    Button5,  TRUE},
+-    { NULL, (unsigned int)NULL, (Boolean(*)())NULL, (unsigned int)NULL, (Boolean)(unsigned)NULL}
++    { NULL, 0, NULL, 0, FALSE}
+ };
+ 
+ 
+ static EventTableEntry keyEvents[] = {
+ 
+     {"key",         KeyPress,    ParseKeySym,    0,  FALSE},
+-    { NULL, (unsigned int)NULL, (Boolean(*)())NULL, (unsigned int)NULL, (Boolean)(unsigned)NULL}
++    { NULL, 0, NULL, 0, FALSE}
+ };
+ 
+ #ifdef PANELIST
+@@ -372,13 +372,15 @@ unsigned int buttonModifierMasks[] = {
+  * FUNCTION PARSER TABLE (function names must be in alphabetic order)
+  */
+ 
++typedef Boolean (*ParseProcFunc)(unsigned char **, WmFunction, void *);
++
+ typedef struct {
+    char         * funcName;
+    Context        greyedContext;
+    unsigned int   resource;
+    long           mgtMask;
+    WmFunction     wmFunction;
+-   Boolean       (*parseProc)();
++   ParseProcFunc  parseProc;
+ } FunctionTableEntry;
+ 
+ 
+@@ -394,325 +396,325 @@ FunctionTableEntry functionTable[] = {
+ 			CRS_ANY,
+ 			0,
+ 			F_Action,
+-			ParseWmFuncActionArg},
++			(ParseProcFunc)ParseWmFuncActionArg},
+ #else /* PANELIST */
+     {"f.action",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Action,
+-			ParseWmFuncStrArg},
++			(ParseProcFunc)ParseWmFuncStrArg},
+ #endif  /* PANELIST */
+ #endif /* WSM */
+     {"f.beep",		0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Beep,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #if ((!defined(WSM)) || defined(MWM_QATS_PROTOCOL))
+     {"f.cci",		0,
+ 	        	CRS_ANY,
+ 			0,
+ 			F_Nop,
+-			ParseWmFuncCCIArgs},
++			(ParseProcFunc)ParseWmFuncCCIArgs},
+ #endif /* !defined(WSM) || defined(MWM_QATS_PROTOCOL) */
+     {"f.circle_down",	F_SUBCONTEXT_IB_IICON|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Circle_Down,
+-			ParseWmFuncGrpArg},
++			(ParseProcFunc)ParseWmFuncGrpArg},
+     {"f.circle_up",	F_SUBCONTEXT_IB_IICON|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Circle_Up,
+-			ParseWmFuncGrpArg},
++			(ParseProcFunc)ParseWmFuncGrpArg},
+ #ifdef WSM
+     {"f.create_workspace", 0,
+ 			CRS_ANY,
+ 			0,
+ 			F_CreateWorkspace,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.delete_workspace", 0,
+ 			CRS_ANY,
+ 			0,
+ 			F_DeleteWorkspace,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* WSM */
+     {"f.exec",		0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Exec,
+-			ParseWmFuncStrArg},
++			(ParseProcFunc)ParseWmFuncStrArg},
+     {"f.focus_color",	F_SUBCONTEXT_IB_IICON|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Focus_Color,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.focus_key",	F_SUBCONTEXT_IB_IICON|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Focus_Key,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #ifdef WSM
+     {"f.goto_workspace", 0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Goto_Workspace,
+-			ParseWmFuncStrArg},
++			(ParseProcFunc)ParseWmFuncStrArg},
+ #endif /* WSM */
+ #ifdef WSM
+     {"f.help",          0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Help,
+-			ParseWmFuncStrArg},  /* [helpvolume && helptopic] */
++			(ParseProcFunc)ParseWmFuncStrArg},  /* [helpvolume && helptopic] */
+     {"f.help_mode",     0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Help_Mode,
+-			ParseWmFuncNoArg},  /* for now */
++			(ParseProcFunc)ParseWmFuncNoArg},  /* for now */
+ #endif /* WSM */
+ #if ((!defined(WSM)) || defined(MWM_QATS_PROTOCOL))
+     {"f.invoke_command",
+ 	        	0, CRS_ANY,
+ 			0,
+ 			F_InvokeCommand,
+-			ParseWmFuncStrArg},
++			(ParseProcFunc)ParseWmFuncStrArg},
+ #endif /* !defined(WSM) || defined(MWM_QATS_PROTOCOL) */
+     {"f.kill",		F_CONTEXT_ROOT,
+ 			CRS_ANY,
+ 			MWM_FUNC_CLOSE,
+ 			F_Kill,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.lower",		F_SUBCONTEXT_IB_IICON|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Lower,
+-                        ParseWmFuncMaybeStrArg},
++                        (ParseProcFunc)ParseWmFuncMaybeStrArg},
+ #ifdef WSM
+     {"f.marquee_selection",	
+ 			F_CONTEXT_WINDOW|F_CONTEXT_ICON|F_SUBCONTEXT_IB_IICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Marquee_Selection,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* WSM */
+     {"f.maximize",	F_CONTEXT_ROOT|F_CONTEXT_MAXIMIZE|
+ 	                               F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			MWM_FUNC_MAXIMIZE,
+ 			F_Maximize,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.menu",		0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Menu,
+-			ParseWmFuncStrArg},
++			(ParseProcFunc)ParseWmFuncStrArg},
+     {"f.minimize",	F_CONTEXT_ICON|F_CONTEXT_ROOT|F_SUBCONTEXT_IB_IICON,
+ 			CRS_ANY,
+ 			MWM_FUNC_MINIMIZE,
+ 			F_Minimize,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.move",		F_CONTEXT_ROOT,
+ 			CRS_ANY,
+ 			MWM_FUNC_MOVE,
+ 			F_Move,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.next_cmap",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Next_Cmap,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.next_key",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Next_Key,
+-			ParseWmFuncGrpArg},
++			(ParseProcFunc)ParseWmFuncGrpArg},
+ #ifdef WSM
+     {"f.next_workspace",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Next_Workspace,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* WSM */
+     {"f.nop",	        F_CONTEXT_ROOT|F_CONTEXT_ICON|F_CONTEXT_WINDOW|
+ 	                    F_SUBCONTEXT_IB_WICON | F_SUBCONTEXT_IB_IICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Nop,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.normalize",	F_CONTEXT_ROOT|F_CONTEXT_NORMAL|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Normalize,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #ifdef PANELIST
+     {"f.normalize_and_raise",
+ 	                F_CONTEXT_ROOT|F_CONTEXT_NORMAL,
+ 			CRS_ANY,
+ 			0,
+ 			F_Normalize_And_Raise,
+-			ParseWmFuncMaybeStrArg},
++			(ParseProcFunc)ParseWmFuncMaybeStrArg},
+ #else /* PANELIST */
+     {"f.normalize_and_raise",
+ 	                F_CONTEXT_ROOT|F_CONTEXT_NORMAL,
+ 			CRS_ANY,
+ 			0,
+ 			F_Normalize_And_Raise,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* PANELIST */
+ #ifdef WSM
+     {"f.occupy_all", F_CONTEXT_ICONBOX|F_CONTEXT_ROOT,
+ 			CRS_ANY,
+                         DtWM_FUNC_OCCUPY_WS,
+  			F_AddToAllWorkspaces,
+-                        ParseWmFuncNoArg},
++                        (ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* WSM */
+     {"f.pack_icons",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Pack_Icons,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.pass_keys",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Pass_Key,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #if ((!defined(WSM)) || defined(MWM_QATS_PROTOCOL))
+     {"f.post_rmenu",	0,
+ 	        	CRS_KEY,
+ 			0,
+ 			F_Post_RMenu,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* !defined(WSM) || defined(MWM_QATS_PROTOCOL) */
+     {"f.post_wmenu",	0,
+ 			CRS_BUTTON|CRS_KEY,
+ 			0,
+ 			F_Post_SMenu,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.prev_cmap",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Prev_Cmap,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.prev_key",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Prev_Key,
+-			ParseWmFuncGrpArg},
++			(ParseProcFunc)ParseWmFuncGrpArg},
+ #ifdef WSM
+     {"f.prev_workspace",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Prev_Workspace,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* WSM */
+     {"f.quit_mwm",	F_CONTEXT_ICON|F_CONTEXT_WINDOW,
+ 			CRS_ANY,
+ 			0,
+ 			F_Quit_Mwm,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.raise",		F_SUBCONTEXT_IB_IICON|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Raise,
+-                        ParseWmFuncMaybeStrArg},
++                        (ParseProcFunc)ParseWmFuncMaybeStrArg},
+     {"f.raise_lower",	F_CONTEXT_ROOT |
+     				F_SUBCONTEXT_IB_IICON|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Raise_Lower,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.refresh",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Refresh,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.refresh_win",	F_CONTEXT_ICON|F_CONTEXT_ROOT,
+ 			CRS_ANY,
+ 			0,
+ 			F_Refresh_Win,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #ifdef WSM
+     {"f.remove",	F_CONTEXT_ROOT,
+ 			CRS_ANY,
+ 			DtWM_FUNC_OCCUPY_WS,
+ 			F_Remove,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* WSM */
+     {"f.resize",	F_CONTEXT_ICON|F_CONTEXT_ROOT|
+                                  F_SUBCONTEXT_IB_IICON|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			MWM_FUNC_RESIZE,
+ 			F_Resize,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #ifdef WSM
+     {"f.restart",	F_CONTEXT_ICON|F_CONTEXT_WINDOW,
+ 			CRS_ANY,
+ 			0,
+ 			F_Restart,
+-			ParseWmFuncStrArg},
++			(ParseProcFunc)ParseWmFuncStrArg},
+ #else /* WSM */
+     {"f.restart",	F_CONTEXT_ICON|F_CONTEXT_WINDOW,
+ 			CRS_ANY,
+ 			0,
+ 			F_Restart,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* WSM */
+     {"f.restore",	F_CONTEXT_ROOT|F_CONTEXT_NORMAL|F_SUBCONTEXT_IB_WICON,
+ 			CRS_ANY,
+ 			0,
+ 			F_Restore,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.restore_and_raise",
+ 	                F_CONTEXT_ROOT|F_CONTEXT_NORMAL,
+ 			CRS_ANY,
+ 			0,
+ 			F_Restore_And_Raise,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.screen",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Screen,
+-			ParseWmFuncStrArg},
++			(ParseProcFunc)ParseWmFuncStrArg},
+     {"f.send_msg",	F_CONTEXT_ROOT,
+ 			CRS_ANY,
+ 			0,
+ 			F_Send_Msg,
+-			ParseWmFuncNbrArg},
++			(ParseProcFunc)ParseWmFuncNbrArg},
+     {"f.separator",	0,
+ 			CRS_MENU,
+ 			0,
+ 			F_Separator,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+     {"f.set_behavior",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Set_Behavior,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #ifdef WSM
+     {"f.set_context",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Set_Context,
+-			ParseWmFuncNbrArg},
++			(ParseProcFunc)ParseWmFuncNbrArg},
+ #endif /* WSM */
+     {"f.title",		0,
+ 			CRS_MENU,
+ 			0,
+ 			F_Title,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #if defined(PANELIST)
+     {"f.toggle_frontpanel", 0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Toggle_Front_Panel,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ 
+     {"f.version",       0,
+ 			CRS_ANY,
+ 			0,
+ 			F_Version,
+-			ParseWmFuncNoArg},
++			(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* PANELIST */
+ #ifdef WSM
+ 
+@@ -725,14 +727,14 @@ FunctionTableEntry functionTable[] = {
+  			CRS_ANY,
+ 			DtWM_FUNC_OCCUPY_WS,
+  			F_Workspace_Presence,
+-                 	ParseWmFuncNoArg},
++                 	(ParseProcFunc)ParseWmFuncNoArg},
+ #endif /* WSM */
+ #if defined(DEBUG) && defined(WSM)
+     {"f.zz_debug",	0,
+ 			CRS_ANY,
+ 			0,
+ 			F_ZZ_Debug,
+-                        ParseWmFuncStrArg},
++                        (ParseProcFunc)ParseWmFuncStrArg},
+ #endif /* DEBUG */
+ };
+ 
+--- motif-2.3.8/clients/mwm/WmResource.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/mwm/WmResource.c	2026-02-01 09:26:11.361363370 +0100
+@@ -72,7 +72,7 @@ static char rcsid[] = "$TOG: WmResource.
+ /*
+  * Function Declarations:
+  */
+-XmColorData *_WmGetDefaultColors ();
++XmColorData *_WmGetDefaultColors (Screen *, Colormap, String);
+ 
+ void _WmTopShadowPixmapDefault (Widget widget, int offset, XrmValue *value);
+ void _WmIconImageFDefault (Widget widget, int offset, XrmValue *value);
+--- motif-2.3.8/clients/mwm/WmSignal.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/mwm/WmSignal.c	2026-02-01 09:27:08.445009462 +0100
+@@ -295,11 +295,11 @@ void ChildProcSignalHandler (int dummy)
+ {
+    pid_t pid;
+    int status;
+-   void (*intStat) ();
+-   void (*quitStat) ();
++   void (*intStat) (int);
++   void (*quitStat) (int);
+    
+-   intStat = (void (*)())signal (SIGINT, SIG_IGN);
+-   quitStat = (void (*)())signal (SIGQUIT, SIG_IGN);
++   intStat = signal (SIGINT, SIG_IGN);
++   quitStat = signal (SIGQUIT, SIG_IGN);
+ 
+    pid = wait(&status);
+    signal(SIGCHLD, ChildProcSignalHandler); 
+--- motif-2.3.8/clients/uil/Uil.h.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/uil/Uil.h	2026-02-01 10:00:27.902648372 +0100
+@@ -148,9 +148,9 @@ extern Uil_status_type Uil
+ 		    _ARGUMENTS((
+ 			Uil_command_type *command_desc ,
+ 			Uil_compile_desc_type *compile_desc ,
+-			Uil_continue_type (*message_cb )(),
++			Uil_continue_type (*message_cb )(char *, int, int, char *, char *, char *, char *, int[]),
+ 			char *message_data ,
+-			Uil_continue_type (*status_cb )(),
++			Uil_continue_type (*status_cb )(char *, int, int, char *, int[]),
+ 			char *status_data ));
+ 
+ 
+--- motif-2.3.8/clients/uil/UilCmdDef.h.orig	2026-02-01 09:58:41.442064220 +0100
++++ motif-2.3.8/clients/uil/UilCmdDef.h	2026-02-01 09:58:45.025417216 +0100
+@@ -67,9 +67,9 @@ typedef struct
+ 					    /* point is passed before	    */
+ 					    /* calling statusCB routine	    */
+ 					    /* 0 means called every time    */
+-    Uil_continue_type	(*message_cb)();
++    Uil_continue_type	(*message_cb)(char *, int, int, char *, char *, char *, char *, int[]);
+     char		*message_data;
+-    Uil_continue_type	(*status_cb)();
++    Uil_continue_type	(*status_cb)(char *, int, int, char *, int[]);
+     char		*status_data;
+     unsigned	    	v_use_setlocale: 1;    /* Allow localized strings */
+     char		*ac_database;
+--- motif-2.3.8/clients/uil/UilDef.h.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/uil/UilDef.h	2026-02-01 11:47:48.641332677 +0100
+@@ -77,7 +77,7 @@ extern "C" {
+ /* uilmain.c */
+ extern Uil_status_type Uil _ARGUMENTS((Uil_command_type
+ *comand_desc,Uil_compile_desc_type *compile_desc,Uil_continue_type
+-(*message_cb)(), char *message_data, Uil_continue_type (*status_cb)(),
++(*message_cb)(char *, int, int, char *, char *, char *, char *, int[]), char *message_data, Uil_continue_type (*status_cb)(char *, int, int, char *, int[]),
+ char *status_data));
+ 
+ /* uilsymstor.c */
+--- motif-2.3.8/clients/uil/UilDefI.h.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/uil/UilDefI.h	2026-02-01 09:57:56.355150161 +0100
+@@ -369,7 +369,7 @@ extern char *resource_name_from_code  _A
+ extern void uil_exit  _ARGUMENTS(( int severity ));
+ extern Uil_status_type Uil _ARGUMENTS((Uil_command_type
+ *comand_desc,Uil_compile_desc_type *compile_desc,Uil_continue_type
+-(*message_cb)(), char *message_data, Uil_continue_type (*status_cb)(),
++(*message_cb)(char *, int, int, char *, char *, char *, char *, int[]), char *message_data, Uil_continue_type (*status_cb)(char *, int, int, char *, int[]),
+ char *status_data));
+ 
+ 
+--- motif-2.3.8/clients/uil/UilCmd.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/uil/UilCmd.c	2026-02-01 09:59:19.398939158 +0100
+@@ -138,8 +138,8 @@ char 	*rac_arg_value[ ];
+     Uil_cmd_z_command.v_parse_tree = FALSE;
+     Uil_cmd_z_command.v_use_setlocale = FALSE;
+     Uil_cmd_z_command.status_update_delay = 0;
+-    Uil_cmd_z_command.message_cb = (Uil_continue_type(*)())NULL;
+-    Uil_cmd_z_command.status_cb = (Uil_continue_type(*)())NULL;
++    Uil_cmd_z_command.message_cb = NULL;
++    Uil_cmd_z_command.status_cb = NULL;
+     Uil_cmd_z_command.ac_database = NULL;
+     Uil_cmd_z_command.v_database = FALSE;
+ 
+--- motif-2.3.8/clients/uil/UilDiags.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/uil/UilDiags.c	2026-02-01 10:01:52.886448015 +0100
+@@ -85,9 +85,9 @@ static	int	Uil_diag_status_delay_count;
+ /*
+  * Fix for CR 5534 - static storage for old signal handlers
+  */
+-static	void 	(*bus_handler)();
+-static	void 	(*sys_handler)();
+-static	void 	(*fpe_handler)();
++static	void 	(*bus_handler)(int);
++static	void 	(*sys_handler)(int);
++static	void 	(*fpe_handler)(int);
+ 
+ /*
+ **++
+@@ -1030,7 +1030,7 @@ XmConst char  *loc_buffer;
+     **  If message callback was supplied, call it with the description of the
+     **  error instead of writing it to standard output.
+     */
+-    if (Uil_cmd_z_command.message_cb != (Uil_continue_type(*)())NULL) 
++    if (Uil_cmd_z_command.message_cb != NULL) 
+     {
+ 	Uil_status_type return_status;
+ /*
+@@ -1189,7 +1189,7 @@ void	diag_report_status ( )
+     /*
+     **  If no status callback was supplied, just return.
+     */
+-    if (Uil_cmd_z_command.status_cb == (Uil_continue_type(*)())NULL) return;
++    if (Uil_cmd_z_command.status_cb == NULL) return;
+ 
+     /*
+     **	If delay is used up (less than or equal to zero) then invoke the
+--- motif-2.3.8/clients/uil/UilMain.c.orig	2026-02-01 10:12:44.956692611 +0100
++++ motif-2.3.8/clients/uil/UilMain.c	2026-02-01 10:11:12.799520275 +0100
+@@ -440,9 +440,9 @@ Uil_status_type Uil
+ 
+ (Uil_command_type        *command_desc,
+ Uil_compile_desc_type   *compile_desc,
+-Uil_continue_type       (*message_cb)(),
++Uil_continue_type       (*message_cb)(char *, int, int, char *, char *, char *, char *, int[]),
+ char            *message_data,
+-Uil_continue_type       (*status_cb)(),
++Uil_continue_type       (*status_cb)(char *, int, int, char *, int[]),
+ char            *status_data)
+ 
+ 
+--- motif-2.3.8/clients/uil/UilP2Out.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/uil/UilP2Out.c	2026-02-01 09:42:51.423512762 +0100
+@@ -95,8 +95,6 @@ typedef	struct	_out_queue_type
+ **
+ **/
+ 
+-char	*_get_memory();
+-void	_free_memory();
+ 
+ /*
+ **
+--- motif-2.3.8/clients/uil/UilSemVal.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/clients/uil/UilSemVal.c	2026-02-01 10:03:13.833558841 +0100
+@@ -134,7 +134,7 @@ static int			cycle_id = 1;
+ **  error_arg_type.
+ **/
+ 
+-static int ( * numeric_convert_table[])() = {
++static int ( * numeric_convert_table[])(sym_value_entry_type *, data_value_type *) = {
+ 	    0,
+ 	    sem_convert_to_integer,
+ 	    sem_convert_to_single_float,
+--- motif-2.3.8/demos/lib/Xmd/RegEdit.c.orig	2017-03-28 00:24:31.000000000 +0200
++++ motif-2.3.8/demos/lib/Xmd/RegEdit.c	2026-02-01 10:43:44.833617635 +0100
+@@ -33,19 +33,19 @@
+ 
+ 
+ /* static forward. move from global in the original Editres code */
+-static void _XEditResCheckMessages();
+-static void _XEditResPutString8();
+-static void _XEditResPut8();
+-static void _XEditResPut16();
+-static void _XEditResPut32();
+-static void _XEditResPutWidgetInfo();
+-static void _XEditResResetStream();
+-static Boolean _XEditResGet8();
+-static Boolean _XEditResGet16();
+-static Boolean _XEditResGetSigned16();
+-static Boolean _XEditResGet32();
+-static Boolean _XEditResGetString8(); 
+-static Boolean _XEditResGetWidgetInfo();
++static void _XEditResCheckMessages(Widget, XtPointer, XEvent *, Boolean *);
++static void _XEditResPutString8(ProtocolStream *, char *);
++static void _XEditResPut8(ProtocolStream *, unsigned int);
++static void _XEditResPut16(ProtocolStream *, unsigned int);
++static void _XEditResPut32(ProtocolStream *, unsigned long);
++static void _XEditResPutWidgetInfo(ProtocolStream *, WidgetInfo *);
++static void _XEditResResetStream(ProtocolStream *);
++static Boolean _XEditResGet8(ProtocolStream *, unsigned char *);
++static Boolean _XEditResGet16(ProtocolStream *, unsigned short *);
++static Boolean _XEditResGetSigned16(ProtocolStream *, short *);
++static Boolean _XEditResGet32(ProtocolStream *, unsigned long *);
++static Boolean _XEditResGetString8(ProtocolStream *, char **); 
++static Boolean _XEditResGetWidgetInfo(ProtocolStream *, WidgetInfo *);
+ 
+ /* the only entry point here */
+ void 
+@@ -139,16 +139,16 @@ static Atom res_editor_command, res_edit
+ 
+ static Globals globals;
+ 
+-static void SendFailure(), SendCommand(), InsertWidget(), ExecuteCommand();
+-static void FreeEvent(), ExecuteSetValues(), ExecuteGetGeometry();
+-static void ExecuteGetResources();
+-
+-static void GetCommand();
+-static void LoadResources();
+-static Boolean IsChild();
+-static void DumpChildren();
+-static char *DumpWidgets(), *DoSetValues(), *DoFindChild();
+-static char *DoGetGeometry(), *DoGetResources();
++static void SendFailure(Widget, Atom, ResIdent, char *), SendCommand(Widget, Atom, ResIdent, EditresCommand, ProtocolStream *), InsertWidget(ProtocolStream *, Widget), ExecuteCommand(Widget, Atom, ResIdent, EditresEvent *);
++static void FreeEvent(EditresEvent *), ExecuteSetValues(Widget, SetValuesEvent *, WidgetInfo *, ProtocolStream *, unsigned short *), ExecuteGetGeometry(Widget, ProtocolStream *);
++static void ExecuteGetResources(Widget, ProtocolStream *);
++
++static void GetCommand(Widget, XtPointer, Atom *, Atom *, XtPointer, unsigned long *, int *);
++static void LoadResources(Widget);
++static Boolean IsChild(Widget, Widget, Widget);
++static void DumpChildren(Widget, ProtocolStream *, unsigned short *);
++static char *DumpWidgets(Widget, EditresEvent *, ProtocolStream *), *DoSetValues(Widget, EditresEvent *, ProtocolStream *), *DoFindChild(Widget, EditresEvent *, ProtocolStream *);
++static char *DoGetGeometry(Widget, EditresEvent *, ProtocolStream *), *DoGetResources(Widget, EditresEvent *, ProtocolStream *);
+ 
+ /************************************************************
+  *
+@@ -252,7 +252,7 @@ unsigned long length;
+      */
+ 
+     if (length < HEADER_SIZE) {
+-	SendFailure(w, sel, ident, Failure, ERROR_MESSAGE);
++	SendFailure(w, sel, ident, ERROR_MESSAGE);
+ 	return(NULL);
+     }
+ 
+@@ -438,7 +438,7 @@ Atom sel;
+ ResIdent ident;
+ EditresEvent * event;
+ {
+-    char * (*func)();
++    char * (*func)(Widget, EditresEvent *, ProtocolStream *);
+     char * str;
+ 
+     if (globals.block == BlockAll) {
+--- motif-2.3.8/demos/programs/animate/xmanimate.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/programs/animate/xmanimate.c	2026-02-01 10:48:17.501789358 +0100
+@@ -67,14 +67,14 @@ static int vecnum = sizeof(vec) / sizeof
+ static MrmCode		class, return_type ;
+ 
+        /* forward declaration of interface procedures */
+-static void p_motifanim_start();
+-static void p_motifanim_stop();
+-static void p_motifanim_step();
+-static void p_motifanim_speed();
+-static void p_motifanim_draw();
+-static void p_motifanim_exit();
+-static void p_motifanim_help();
+-static void InitAnim();
++static void p_motifanim_start(Widget, char *, XmAnyCallbackStruct *);
++static void p_motifanim_stop(Widget, char *, XmAnyCallbackStruct *);
++static void p_motifanim_step(Widget, char *, XmAnyCallbackStruct *);
++static void p_motifanim_speed(Widget, char *, XmAnyCallbackStruct *);
++static void p_motifanim_draw(Widget, char *, XmAnyCallbackStruct *);
++static void p_motifanim_exit(Widget, char *, XmAnyCallbackStruct *);
++static void p_motifanim_help(Widget, XtPointer, XtPointer);
++static void InitAnim(void);
+ 
+        /* binding of uil procedure names with C functions */
+ static MRMRegisterArg	regvec[] = {
+--- motif-2.3.8/demos/programs/earth/earth.c.orig	2016-03-16 03:14:09.000000000 +0100
++++ motif-2.3.8/demos/programs/earth/earth.c	2026-02-01 10:49:30.345525114 +0100
+@@ -96,11 +96,11 @@ static Pixmap       pterre ;
+ static GC           gc ;
+ static int          n ;
+ 
+-static void    Syntax() ;
+-static void    input_callback();
+-static void    expose_callback();
+-static void    speed_callback() ;
+-static void    NextBitmap ();
++static void    Syntax(char *) ;
++static void    input_callback(Widget, XtPointer, XtPointer);
++static void    expose_callback(Widget, XtPointer, XtPointer);
++static void    speed_callback(Widget, XtPointer, XtPointer) ;
++static void    NextBitmap (XtPointer, XtIntervalId *);
+ 
+ int delayInterval (speed)
+ /**************************/
+--- motif-2.3.8/demos/programs/getsubres/getsubres.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/programs/getsubres/getsubres.c	2026-02-01 10:51:33.252870780 +0100
+@@ -41,8 +41,8 @@
+ #include <Xm/IconHP.h>
+ #include <Xm/ClipWindowP.h>
+ 
+-static void QuitCB ();			
+-static void HelpCB ();			
++static void QuitCB (Widget, caddr_t, caddr_t);
++static void HelpCB (Widget, caddr_t, caddr_t);
+ 
+ typedef struct _ClassArrayRec {
+     String name ;
+@@ -431,7 +431,7 @@ int argc ; char **argv;
+     n = 0;
+     button = XmCreatePushButton (menu_pane, "Quit", args, n);
+     XtManageChild (button);
+-    XtAddCallback (button, XmNactivateCallback, QuitCB, NULL);
++    XtAddCallback (button, XmNactivateCallback, (XtCallbackProc)QuitCB, NULL);
+ 
+     n = 0;
+     XtSetArg (args[n], XmNsubMenuId, menu_pane);  n++;
+@@ -447,7 +447,7 @@ int argc ; char **argv;
+     n = 0;
+     button = XmCreatePushButton (menu_pane, "Overview", args, n);
+     XtManageChild (button);
+-    XtAddCallback (button, XmNactivateCallback, HelpCB, NULL);
++    XtAddCallback (button, XmNactivateCallback, (XtCallbackProc)HelpCB, NULL);
+ 
+     n = 0;
+     XtSetArg (args[n], XmNsubMenuId, menu_pane);  n++;
+--- motif-2.3.8/demos/programs/panner/panner.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/programs/panner/panner.c	2026-02-01 10:52:59.493347214 +0100
+@@ -627,7 +627,7 @@ DrawWindows (PannerInfoRec *pInfoList)
+   Window        realRoot, root, parent, *child = NULL;
+   int           i, x, y;
+   unsigned int  childCount, width, height;
+-  int (*oldHandler)();
++  XErrorHandler oldHandler;
+ 
+   
+   realRoot = RootWindow(pInfoList[DSP].display,
+--- motif-2.3.8/demos/programs/workspace/client_win.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/demos/programs/workspace/client_win.c	2026-02-01 10:54:00.120348812 +0100
+@@ -30,7 +30,7 @@ static char rcsid[] = "$XConsortium: cli
+ #include <X11/Xlib.h>
+ #include <X11/Xatom.h>
+ 
+-static Window TryChildren();
++static Window TryChildren(Display *, Window, Atom, unsigned int **);
+ 
+ /* Find a window with WM_STATE, else return win itself, as per ICCCM */
+ static Atom WM_STATE = None;
+--- motif-2.3.8/demos/programs/workspace/wsm_create.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/programs/workspace/wsm_create.c	2026-02-01 10:55:24.230813479 +0100
+@@ -54,7 +54,7 @@ static char rcsid[] = "$XConsortium: wsm
+ /*
+  * Some Convenience Routines
+  */
+-void MENU_POST();
++void MENU_POST(Widget, XtPointer, XEvent *, Boolean *);
+ extern Space *current_space;
+ /*
+  * Literal Definitions
+--- motif-2.3.8/demos/programs/FontSel/creation-c.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/programs/FontSel/creation-c.c	2026-02-01 10:58:15.881761760 +0100
+@@ -48,19 +48,17 @@ BxRegisterConverters()
+  * Function prototypes for routines
+  * located in utilities file.
+  */
+-extern XtPointer CONVERT();
+-extern void MENU_POST();
+ 
+ 
+ /*
+  * Callback procedure declarations
+  */
+-extern void CreateHypeLabel();
+-extern void ShowFontValChCB();
+-extern void ExplainCB();
+-extern void ShowCurFont();
+-extern void ShowOtherCB();
+-extern void QuitCB();
++extern void CreateHypeLabel(Widget, XtPointer, XtPointer);
++extern void ShowFontValChCB(Widget, XtPointer, XtPointer);
++extern void ExplainCB(Widget, XtPointer, XtPointer);
++extern void ShowCurFont(Widget, XtPointer, XtPointer);
++extern void ShowOtherCB(Widget, XtPointer, XtPointer);
++extern void QuitCB(Widget, XtPointer, XtPointer);
+ 
+ /*
+  * Function: CreateDemoForm()
+--- motif-2.3.8/demos/programs/Ext18List/creation.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/programs/Ext18List/creation.c	2026-02-01 11:01:21.012784512 +0100
+@@ -41,24 +41,20 @@ RegisterConverters()
+  * Function prototypes for routines
+  * located in utilities file.
+  */
+-extern XtPointer CONVERT();
+-extern void MENU_POST();
+ 
+ 
+ /*
+  * Callback procedure declarations
+  */
+-extern Widget CreateExtListCB();
+-extern void AddCB();
+-extern void RemCB();
+-extern void ExplainCB();
+-extern void QuitCB();
+-extern void UnselCB();
+-extern void ToggleFindArea();
+-extern void FirstRowCol();
+-extern void ChoosePlayerCB();
+-extern void UpdateRemLabelStr();
+-extern void CreateLabel();
++extern Widget CreateExtListCB(Widget);
++extern void RemCB(Widget, XtPointer, XtPointer);
++extern void QuitCB(Widget, XtPointer, XtPointer);
++extern void UnselCB(Widget, XtPointer, XtPointer);
++extern void ToggleFindArea(Widget, XtPointer, XtPointer);
++extern void FirstRowCol(Widget, XtPointer, XtPointer);
++extern void ChoosePlayerCB(Widget, XtPointer, XtPointer);
++extern void UpdateRemLabelStr(Widget, XtPointer, XtPointer);
++extern void CreateLabel(Widget, XtPointer, XtPointer);
+ 
+ /*
+  * Function: Createform()
+--- motif-2.3.8/demos/programs/Paned/creation-c.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/programs/Paned/creation-c.c	2026-02-01 11:02:50.376611533 +0100
+@@ -39,20 +39,18 @@ BxRegisterConverters()
+  * Function prototypes for routines
+  * located in utilities file.
+  */
+-extern XtPointer CONVERT();
+-extern void MENU_POST();
+ 
+ 
+ /*
+  * Callback procedure declarations
+  */
+-extern void CreateLabel();
+-extern void OtherResCB();
+-extern void ConstraintResCB();
+-extern void OrientChValCB();
+-extern void SepValChCB();
+-extern void QuitCB();
+-extern void SashValChCB();
++extern void CreateLabel(Widget, XtPointer, XtPointer);
++extern void OtherResCB(Widget, XtPointer, XtPointer);
++extern void ConstraintResCB(Widget, XtPointer, XtPointer);
++extern void OrientChValCB(Widget, XtPointer, XtPointer);
++extern void SepValChCB(Widget, XtPointer, XtPointer);
++extern void QuitCB(Widget, XtPointer, XtPointer);
++extern void SashValChCB(Widget, XtPointer, XtPointer);
+ 
+ /*
+  * Function: Createpaned()
+--- motif-2.3.8/demos/unsupported/xmapdef/xmapdef.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/unsupported/xmapdef/xmapdef.c	2026-02-01 11:09:32.505494490 +0100
+@@ -37,39 +37,39 @@
+ #include <stdlib.h>
+ #include <Xm/XmAll.h>
+ 
++typedef struct {
++    Widget work_area  ;
++    Widget v_scrb ;
++    String file_name ;
++    XFontStruct * font_struct ;
++    GC draw_gc ;
++    char ** lines ;
++    int num_lines ;
++} FileData ;
++
+ /*-------------------------------------------------------------
+ **	Forwarded functions
+ */
+-void CreateApplication ();	
+-void WarnUser ();	
+-Widget CreateHelp ();		
++void CreateApplication (Widget, FileData *);
++void WarnUser (Widget, String, String);
++Widget CreateHelp (Widget);
+ 
+ /*      Xt callbacks 
+ */
+-void DrawCB ();			
+-void ValueCB ();			
+-void OpenCB ();			
+-void ReadCB ();			
+-void QuitCB ();			
+-void HelpCB ();			
++void DrawCB (Widget, caddr_t, caddr_t);
++void ValueCB (Widget, caddr_t, caddr_t);
++void OpenCB (Widget, caddr_t, caddr_t);
++void ReadCB (Widget, caddr_t, caddr_t);
++void QuitCB (Widget, caddr_t, caddr_t);
++void HelpCB (Widget, caddr_t, caddr_t);
+ 
+ /*-------------------------------------------------------------
+ **      File i/o and drawing stuff
+ */
+-void InitFile ();			
+-Boolean BuildLineTable ();			
+-void ReDraw ();			
+-void ReSize ();			
+-
+-typedef struct {
+-    Widget work_area  ;
+-    Widget v_scrb ;
+-    String file_name ;
+-    XFontStruct * font_struct ;
+-    GC draw_gc ;
+-    char ** lines ;
+-    int num_lines ;
+-} FileData ;
++void InitFile (Widget, FileData *, int, char **);
++Boolean BuildLineTable (FileData *, String);
++void ReDraw (FileData *);
++void ReSize (FileData *);
+ 
+ 
+ /*-------------------------------------------------------------
+@@ -134,11 +134,11 @@ FileData *       filedata;
+     button = XmCreatePushButton (menu_pane, "Open...", args, n);
+     XtManageChild (button);
+     /* pass the graphic id to the save function */
+-    XtAddCallback (button, XmNactivateCallback, OpenCB, (XtPointer)filedata);
++    XtAddCallback (button, XmNactivateCallback, (XtCallbackProc)OpenCB, (XtPointer)filedata);
+     n = 0;
+     button = XmCreatePushButton (menu_pane, "Quit", args, n);
+     XtManageChild (button);
+-    XtAddCallback (button, XmNactivateCallback, QuitCB, NULL);
++    XtAddCallback (button, XmNactivateCallback, (XtCallbackProc)QuitCB, NULL);
+ 
+     n = 0;
+     XtSetArg (args[n], XmNsubMenuId, menu_pane);  n++;
+@@ -154,7 +154,7 @@ FileData *       filedata;
+     n = 0;
+     button = XmCreatePushButton (menu_pane, "Help", args, n);
+     XtManageChild (button);
+-    XtAddCallback (button, XmNactivateCallback, HelpCB, NULL);
++    XtAddCallback (button, XmNactivateCallback, (XtCallbackProc)HelpCB, NULL);
+ 
+     n = 0;
+     XtSetArg (args[n], XmNsubMenuId, menu_pane);  n++;
+@@ -171,7 +171,7 @@ FileData *       filedata;
+      n = 0;
+     XtSetArg (args[n], XmNorientation, XmVERTICAL);  n++;
+     filedata->v_scrb = XmCreateScrollBar (main_window, "v_scrb", args, n);
+-    XtAddCallback (filedata->v_scrb, XmNvalueChangedCallback, ValueCB, 
++    XtAddCallback (filedata->v_scrb, XmNvalueChangedCallback, (XtCallbackProc)ValueCB, 
+ 		   (XtPointer)filedata);
+     XtManageChild (filedata->v_scrb);
+ 
+@@ -180,9 +180,9 @@ FileData *       filedata;
+      */
+     n = 0;
+     filedata->work_area = XmCreateDrawingArea(main_window, "work_area", args, n);
+-    XtAddCallback (filedata->work_area, XmNexposeCallback, DrawCB, 
++    XtAddCallback (filedata->work_area, XmNexposeCallback, (XtCallbackProc)DrawCB, 
+ 		   (XtPointer)filedata);
+-    XtAddCallback (filedata->work_area, XmNresizeCallback, DrawCB, 
++    XtAddCallback (filedata->work_area, XmNresizeCallback, (XtCallbackProc)DrawCB, 
+ 		   (XtPointer)filedata);
+     XtManageChild (filedata->work_area);
+ 
+@@ -209,7 +209,7 @@ caddr_t		call_data;	/*  data from widget
+ 	    fsb_box = XmCreateFileSelectionDialog (w, "Load file", 
+ 						   NULL, 0);
+ 	    /* just propagate the graphic information */
+-	    XtAddCallback (fsb_box, XmNokCallback, ReadCB, client_data);
++	    XtAddCallback (fsb_box, XmNokCallback, (XtCallbackProc)ReadCB, client_data);
+ 	}    
+ 
+ 	XtManageChild (fsb_box);
+--- motif-2.3.8/demos/unsupported/xmfonts/xmfonts.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/demos/unsupported/xmfonts/xmfonts.c	2026-02-01 11:11:34.999501957 +0100
+@@ -57,14 +57,14 @@ Xmfonts.ad:
+ **	Forward Declarations
+ */
+ 
+-Widget CreateApplication ();	/*  create main window		*/
+-Widget CreateFontSample ();	/*  create font display window	*/
+-Widget CreateHelp ();		/*  create help window		*/
+-
+-void SelectFontCB ();		/*  callback for font buttons	*/
+-void CloseCB ();		/*  callback for close button	*/
+-void HelpCB ();			/*  callback for help button	*/
+-void QuitCB ();			/*  callback for quit button	*/
++Widget CreateApplication (Widget);	/*  create main window		*/
++Widget CreateFontSample (Widget);	/*  create font display window	*/
++Widget CreateHelp (Widget);		/*  create help window		*/
++
++void SelectFontCB (Widget, caddr_t, caddr_t);		/*  callback for font buttons	*/
++void CloseCB (Widget, caddr_t, caddr_t);		/*  callback for close button	*/
++void HelpCB (Widget, caddr_t, caddr_t);			/*  callback for help button	*/
++void QuitCB (Widget, caddr_t, caddr_t);			/*  callback for quit button	*/
+ 
+ 
+ 
+@@ -189,7 +189,7 @@ Widget		parent;		/*  parent widget	*/
+ 	n = 0;
+ 	button = XmCreatePushButton (menu_pane, "Quit", args, n);
+ 	XtManageChild (button);
+-	XtAddCallback (button, XmNactivateCallback, QuitCB, NULL);
++	XtAddCallback (button, XmNactivateCallback, (XtCallbackProc)QuitCB, NULL);
+ 
+ 	n = 0;
+ 	XtSetArg (args[n], XmNsubMenuId, menu_pane);  n++;
+@@ -202,7 +202,7 @@ Widget		parent;		/*  parent widget	*/
+ 	n = 0;
+ 	cascade = XmCreateCascadeButton (menu_bar, "Help", args, n);
+ 	XtManageChild (cascade);
+-	XtAddCallback (cascade, XmNactivateCallback, HelpCB, NULL);
++	XtAddCallback (cascade, XmNactivateCallback, (XtCallbackProc)HelpCB, NULL);
+ 
+ 	n = 0;
+ 	XtSetArg (args[n], XmNmenuHelpWidget, cascade);  n++;
+@@ -265,7 +265,7 @@ Widget		parent;		/*  parent widget	*/
+ 		    button = XmCreatePushButton(row_column, name, 
+ 						args, n);
+ 		XtManageChild (button);
+-		XtAddCallback (button, XmNarmCallback, SelectFontCB, NULL);
++		XtAddCallback (button, XmNarmCallback, (XtCallbackProc)SelectFontCB, NULL);
+ 		XmStringFree (label_string);
+ 	}
+ 
+--- motif-2.3.8/demos/unsupported/xmform/xmform.c.orig	2026-02-01 10:44:19.440475315 +0100
++++ motif-2.3.8/demos/unsupported/xmform/xmform.c	2026-02-01 11:13:35.623499133 +0100
+@@ -56,9 +56,9 @@ xmform*bottomShadowColor:        black
+ #include <Xm/ArrowB.h>
+ #include <stdlib.h>
+ 
+-static void FillItPlease();
+-static void NearlyEvenSpread();
+-static Widget AddStem() ;
++static void FillItPlease(Widget, char);
++static void NearlyEvenSpread(Widget *, Cardinal, Dimension, Dimension);
++static Widget AddStem(Widget, Dimension, Dimension, Dimension, Dimension, int) ;
+ 
+ int main(argc, argv) 
+ int argc; char **argv;
+@@ -148,7 +148,7 @@ char letter ;
+ 	/* 2 buttons and the arrow in between on top */
+ 	child[p] = AddStem(form, 0, 25, 100, 0, XmPUSHBUTTON); p++;
+ 	child[p] = AddStem(form, 0, 100, 100, 75, XmPUSHBUTTON); p++;
+-	child[p] = AddStem(form, 0, 75, 35, 25, NULL); p++;
++	child[p] = AddStem(form, 0, 75, 35, 25, 0); p++;
+ /*	XtSetArg(args[n], XmNshadowThickness, 0); n++;*/
+ 	XtSetArg(args[n], XmNarrowDirection, XmARROW_DOWN); n++;
+ 	XtSetValues(child[2], args, n);
+@@ -170,7 +170,7 @@ char letter ;
+ 	break ;
+     case 'I' :
+ 	/* 1 vertical button + one arrow on top */
+-	child[p] = AddStem(form, 0, 63, 25, 38, NULL); p++;
++	child[p] = AddStem(form, 0, 63, 25, 38, 0); p++;
+ 	child[p] = AddStem(form, 30, 63, 100, 38, XmPUSHBUTTON); p++;
+ /*	XtSetArg(args[n], XmNshadowThickness, 0); n++;*/
+ 	XtSetValues(child[0], args, n);
+--- motif-2.3.8/demos/unsupported/Exm/Container.h.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/unsupported/Exm/Container.h	2026-02-01 11:14:35.310494281 +0100
+@@ -87,7 +87,7 @@ typedef struct _ExmContainerRec      * E
+ 
+ 
+ /* Specify the API for this widget. */
+-extern Widget ExmCreateContainer();
++extern Widget ExmCreateContainer(Widget, char *, ArgList, Cardinal);
+ 
+ 
+ /* Allow for C++ compilation. */
+--- motif-2.3.8/demos/unsupported/dogs/DogP.h.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/unsupported/dogs/DogP.h	2026-02-01 11:24:09.093640431 +0100
+@@ -37,8 +37,8 @@
+ #include <Xm/PrimitiveP.h>
+ #include "Dog.h"
+ 
+-void _DogDrawPixmap();
+-void _DogPosition();
++void _DogDrawPixmap(DogWidget);
++void _DogPosition(DogWidget);
+ 
+ #define DogIndex (XmPrimitiveIndex + 1)
+ 
+--- motif-2.3.8/demos/unsupported/dogs/Dog.h.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/unsupported/dogs/Dog.h	2026-02-01 11:34:27.456972757 +0100
+@@ -50,9 +50,9 @@ typedef struct _DogRec *DogWidget;
+ 
+ #define IsDog(w) XtIsSubclass((w), dogWidgetClass)
+ 
+-extern Widget DogCreate();
++extern Widget DogCreate(Widget, char *, ArgList, Cardinal);
+ #ifdef	USING_UIL
+-extern int DogMrmInitialize();
++extern int DogMrmInitialize(void);
+ #endif
+ 
+ #endif /* _Dog_h */
+--- motif-2.3.8/demos/unsupported/dogs/Dog.c.orig	2017-03-28 00:24:31.000000000 +0200
++++ motif-2.3.8/demos/unsupported/dogs/Dog.c	2026-02-01 11:34:29.366983052 +0100
+@@ -95,22 +95,22 @@ static char rcsid[] = "$TOG: Dog.c /main
+     (char *)(b), (wd), (ht), Foreground(w), BackgroundPixel(w), \
+     DefaultDepthOfScreen(XtScreen(w)))
+ 
+-static void ClassInitialize();
+-static void Initialize();
+-static void Redisplay();
+-static void Resize();
+-static void Destroy();
+-static Boolean SetValues();
+-static XtGeometryResult QueryGeometry();
+-
+-static void bark_dog();
+-static void end_bark();
+-static void start_wag();
+-static void stop_wag();
+-static void do_wag();
+-static void create_GC();
+-static void create_pixmaps();
+-static void destroy_pixmaps();
++static void ClassInitialize(void);
++static void Initialize(DogWidget, DogWidget);
++static void Redisplay(Widget, XEvent *, Region);
++static void Resize(DogWidget);
++static void Destroy(DogWidget);
++static Boolean SetValues(DogWidget, DogWidget, DogWidget);
++static XtGeometryResult QueryGeometry(DogWidget, XtWidgetGeometry *, XtWidgetGeometry *);
++
++static void bark_dog(DogWidget, XEvent *);
++static void end_bark(DogWidget, XtIntervalId *);
++static void start_wag(DogWidget, XEvent *);
++static void stop_wag(DogWidget, XEvent *);
++static void do_wag(XtPointer, XtIntervalId *);
++static void create_GC(DogWidget);
++static void create_pixmaps(DogWidget);
++static void destroy_pixmaps(DogWidget);
+ 
+ static char defaultTranslations[] =
+    "<Btn1Down>:         Bark()\n\
+@@ -149,7 +149,7 @@ DogClassRec dogClassRec = {
+     ClassInitialize,                    /* class_initialize     */
+     NULL,                               /* class_part_initialize*/
+     False,                              /* class_inited         */
+-    Initialize,                         /* initialize           */
++    (XtInitProc)Initialize,             /* initialize           */
+     NULL,                               /* initialize_notify    */
+     XtInheritRealize,                   /* realize              */
+     actionsList,                        /* actions              */
+@@ -161,10 +161,10 @@ DogClassRec dogClassRec = {
+     True,                               /* compress_exposure    */
+     True,                               /* compress_enterleave  */
+     False,                              /* visible_interest     */
+-    Destroy,                            /* destroy              */
+-    Resize,                             /* resize               */
++    (XtWidgetProc)Destroy,              /* destroy              */
++    (XtWidgetProc)Resize,               /* resize               */
+     Redisplay,                          /* expose               */
+-    SetValues,                          /* set_values           */
++    (XtSetValuesFunc)SetValues,         /* set_values           */
+     NULL,                               /* set_values_hook      */
+     XtInheritSetValuesAlmost,           /* set_values_almost    */
+     NULL,                               /* get_values_hook      */
+@@ -172,7 +172,7 @@ DogClassRec dogClassRec = {
+     XtVersionDontCheck,                 /* version              */
+     NULL,                               /* callback_private     */
+     defaultTranslations,                /* tm_table             */
+-    QueryGeometry,                      /* query_geometry       */
++    (XtGeometryHandler)QueryGeometry,   /* query_geometry       */
+     NULL,                               /* disp accelerator     */
+     NULL                                /* extension            */
+     },
+@@ -180,7 +180,7 @@ DogClassRec dogClassRec = {
+     XmInheritWidgetProc,               	/* border_highlight     */
+     XmInheritWidgetProc,               	/* border_unhighlight   */
+     XtInheritTranslations,       	/* translations         */
+-    bark_dog,                           /* arm_and_activate     */
++    (XtActionProc)bark_dog,             /* arm_and_activate     */
+     NULL,   	    			/* syn resources        */
+     0,					/* num syn_resources    */
+     NULL,                             	/* extension            */
+@@ -204,8 +204,8 @@ static XmOffsetPtr offsets; /* Part Offs
+ Widget DogCreate(parent, name, arglist, nargs)
+     Widget parent;
+     char *name;
+-    Arg *arglist;
+-    int nargs;
++    ArgList arglist;
++    Cardinal nargs;
+ {
+     return(XtCreateWidget (name, dogWidgetClass, parent, arglist, nargs));
+ }
+@@ -482,7 +482,7 @@ static void bark_dog(w, event)
+     _DogPosition(w);
+     _DogDrawPixmap(w);
+     BarkId(w) = XtAppAddTimeOut (XtWidgetToApplicationContext((Widget)w),
+-                BarkTime(w), end_bark, w);
++                BarkTime(w), (XtTimerCallbackProc)end_bark, w);
+ }
+ 
+ static void end_bark(w, t)
+--- motif-2.3.8/demos/unsupported/dogs/Square.h.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/unsupported/dogs/Square.h	2026-02-01 11:40:35.628961595 +0100
+@@ -41,7 +41,7 @@ externalref WidgetClass squareWidgetClas
+ typedef struct _SquareClassRec *SquareWidgetClass;
+ typedef struct _SquareRec *SquareWidget;
+ 
+-extern Widget SquareCreate();
++extern Widget SquareCreate(Widget, char *, ArgList, Cardinal);
+ extern int SquareMrmInitialize();
+ 
+ #define IsSquare(w) XtIsSubclass((w), squareWidgetClass)
+--- motif-2.3.8/demos/unsupported/dogs/Square.c.orig	2016-03-16 03:10:08.000000000 +0100
++++ motif-2.3.8/demos/unsupported/dogs/Square.c	2026-02-01 11:40:33.268948673 +0100
+@@ -49,11 +49,11 @@ static char rcsid[] = "$TOG: Square.c /m
+ #define MakeSquare(w) XmConstraintField((w),square_constraint_offsets, \
+ 			Square,make_square, Boolean)
+ 
+-static void ClassInitialize();
+-static void Initialize();
+-static Boolean SetValues();
+-static void ConstraintInitialize();
+-static Boolean ConstraintSetValues();
++static void ClassInitialize(void);
++static void Initialize(SquareWidget, SquareWidget);
++static Boolean SetValues(SquareWidget, SquareWidget, SquareWidget);
++static void ConstraintInitialize(Widget, Widget);
++static Boolean ConstraintSetValues(Widget, Widget, Widget);
+ 
+ static XmPartResource resources[] = {
+     {
+@@ -80,7 +80,7 @@ externaldef(squareclassrec) SquareClassR
+       ClassInitialize,          /* class_initialize     */
+       NULL,                     /* class init part proc */
+       False,                    /* class_inited         */
+-      Initialize,               /* initialize           */
++      (XtInitProc)Initialize,   /* initialize           */
+       NULL,                     /* initialize_notify    */
+       XtInheritRealize,         /* realize              */
+       NULL,                     /* actions              */
+@@ -95,7 +95,7 @@ externaldef(squareclassrec) SquareClassR
+       NULL,                     /* destroy              */
+       XtInheritResize,          /* resize               */
+       XtInheritExpose,          /* expose               */
+-      SetValues,                /* set_values           */
++      (XtSetValuesFunc)SetValues,  /* set_values           */
+       NULL,                     /* set_values_hook      */
+       XtInheritSetValuesAlmost, /* set_values_almost    */
+       NULL,                     /* get_values_hook      */
+@@ -120,9 +120,9 @@ externaldef(squareclassrec) SquareClassR
+       (XtResourceList)constraints,  /* constraint resource     */
+       XtNumber(constraints),        /* number of constraints   */
+       sizeof(SquareConstraintRec), /* size of constraint      */
+-      ConstraintInitialize,         /* initialization          */
++      (XtInitProc)ConstraintInitialize, /* initialization          */
+       NULL,                         /* destroy proc            */
+-      ConstraintSetValues,          /* set_values proc         */
++      (XtSetValuesFunc)ConstraintSetValues, /* set_values proc         */
+       NULL,                         /* extension               */
+    },
+ 
+@@ -163,8 +163,8 @@ static XmOffsetPtr square_constraint_off
+ Widget SquareCreate(parent, name, arglist, nargs)
+     Widget parent;
+     char *name;
+-    Arg *arglist;
+-    int nargs;
++    ArgList arglist;
++    Cardinal nargs;
+ {
+     return(XtCreateWidget (name, squareWidgetClass, parent, arglist, nargs));
+ }
+--- motif-2.3.8/demos/unsupported/uilsymdump/uilsymdump.c.orig	2017-08-17 02:38:43.000000000 +0200
++++ motif-2.3.8/demos/unsupported/uilsymdump/uilsymdump.c	2026-02-01 11:58:03.271365301 +0100
+@@ -35,8 +35,8 @@ static char rcsid[] = "$TOG: uilsymdump.
+ ** Table of Contents
+ **
+ */
+-Uil_status_type		MessageCB		();
+-Uil_status_type	        StatusCB		();
++Uil_status_type		MessageCB		(int *, int, int, char *, char *, char *, char *, int[]);
++Uil_status_type	        StatusCB		(int *, int, int, char *, int[]);
+ 
+ 
+ /*
+@@ -92,8 +92,8 @@ main(int argc, char *argv[])
+     command_desc.parse_tree_flag = 1;
+     command_desc.status_update_delay = 400;
+ 
+-    return_status = Uil(&command_desc, &compile_desc, MessageCB, (char *)&x,
+-			StatusCB, (char *)&y);
++    return_status = Uil(&command_desc, &compile_desc, (Uil_status_type (*)(char *, int, int, char *, char *, char *, char *, int[]))MessageCB, (char *)&x,
++			(Uil_status_type(*)(char *, int, int, char *, int[]))StatusCB, (char *)&y);
+ 
+     UilDumpSymbolTable( (sym_entry_type *)compile_desc.parse_tree_root );
+     return return_status;
+@@ -115,7 +115,7 @@ Uil_status_type	MessageCB(  message_user
+     char    *src_text;	    /* text of source line on which error occured */
+     char    *ptr_text;	    /* source column information */
+     char    *loc_text;	    /* location line */
+-    unsigned int (*message_summary)[Uil_k_max_status+1];
++    int message_summary[Uil_k_max_status+1];
+  
+ {
+     printf ("Message(%d) -- %d-%d-%s\n    %s\n    %s\n    %s\n",
+@@ -135,10 +135,10 @@ Uil_status_type	StatusCB(	status_user_da
+ 				message_summary)
+ 
+     int			*status_user_data;
+-    unsigned int	percent_complete;
+-    unsigned int	lines_processed;
++    int	percent_complete;
++    int	lines_processed;
+     char		*current_file;
+-    unsigned int (*message_summary)[Uil_k_max_status+1];
++    int message_summary[Uil_k_max_status+1];
+ 
+ {
+     printf("Status(%d) -- Percent: %d,  Lines: %d, File: %s\n",

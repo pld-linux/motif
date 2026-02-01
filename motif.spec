@@ -25,7 +25,8 @@ Patch3:		%{name}-parbuild.patch
 Patch4:		format-security.patch
 Patch5:		includes.patch
 Patch6:		yacc.patch
-URL:		http://motif.ics.com/
+Patch7:		%{name}-types.patch
+URL:		https://motif.ics.com/motif/
 BuildRequires:	autoconf >= 2.59-9
 BuildRequires:	automake
 BuildRequires:	bison
@@ -46,7 +47,7 @@ BuildRequires:	xorg-lib-libXmu-devel
 BuildRequires:	xorg-lib-libXp-devel
 BuildRequires:	xorg-lib-libXt-devel
 Requires:	%{name}-libs = %{version}-%{release}
-Obsoletes:	lesstif
+Obsoletes:	lesstif < 1
 Obsoletes:	openmotif < 2.3.4-1
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
@@ -70,7 +71,7 @@ Summary:	Motif clients
 Summary(pl.UTF-8):	Motif - programy klienckie
 Group:		X11/Applications
 Requires:	%{name} = %{version}-%{release}
-Obsoletes:	lesstif-clients
+Obsoletes:	lesstif-clients < 1
 Obsoletes:	openmotif-clients < 2.3.4-1
 
 %description clients
@@ -101,7 +102,7 @@ Requires:	xorg-lib-libXft-devel
 Requires:	xorg-lib-libXmu-devel
 Requires:	xorg-lib-libXp-devel
 Requires:	xorg-lib-libXt-devel
-Obsoletes:	lesstif-devel
+Obsoletes:	lesstif-devel < 1
 Obsoletes:	openmotif-devel < 2.3.4-1
 
 %description devel
@@ -115,7 +116,7 @@ Summary:	Motif static libraries
 Summary(pl.UTF-8):	Statyczne biblioteki Motifa
 Group:		X11/Development/Libraries
 Requires:	%{name}-devel = %{version}-%{release}
-Obsoletes:	lesstif-static
+Obsoletes:	lesstif-static < 1
 Obsoletes:	openmotif-static < 2.3.4-1
 
 %description static
@@ -142,7 +143,7 @@ Summary:	Motif window manager
 Summary(pl.UTF-8):	Motifowy zarządca okien
 Group:		X11/Window Managers
 Requires:	%{name} = %{version}-%{release}
-Obsoletes:	lesstif-mwm
+Obsoletes:	lesstif-mwm < 1
 Obsoletes:	openmotif-mwm < 2.3.4-1
 
 %description mwm
@@ -187,6 +188,7 @@ stare programy mogą z nimi działać).
 %patch -P4 -p1
 %patch -P5 -p1
 %patch -P6 -p1
+%patch -P7 -p1
 
 %build
 %{__libtoolize}
@@ -194,8 +196,6 @@ stare programy mogą z nimi działać).
 %{__autoconf}
 %{__autoheader}
 %{__automake}
-%{__autoconf}
-
 %configure \
 	--enable-jpeg \
 	--enable-png \
@@ -260,18 +260,18 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libs
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_libdir}/libMrm.so.*.*.*
-%attr(755,root,root) %ghost %{_libdir}/libMrm.so.4
-%attr(755,root,root) %{_libdir}/libUil.so.*.*.*
-%attr(755,root,root) %ghost %{_libdir}/libUil.so.4
-%attr(755,root,root) %{_libdir}/libXm.so.*.*.*
-%attr(755,root,root) %ghost %{_libdir}/libXm.so.4
+%{_libdir}/libMrm.so.*.*.*
+%ghost %{_libdir}/libMrm.so.4
+%{_libdir}/libUil.so.*.*.*
+%ghost %{_libdir}/libUil.so.4
+%{_libdir}/libXm.so.*.*.*
+%ghost %{_libdir}/libXm.so.4
 
 %files devel
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_libdir}/libMrm.so
-%attr(755,root,root) %{_libdir}/libUil.so
-%attr(755,root,root) %{_libdir}/libXm.so
+%{_libdir}/libMrm.so
+%{_libdir}/libUil.so
+%{_libdir}/libXm.so
 %{_libdir}/libMrm.la
 %{_libdir}/libUil.la
 %{_libdir}/libXm.la
@@ -359,6 +359,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files compat
 %defattr(644,root,root,755)
-%attr(755,root,root) %{_libdir}/libXm.so.1
-%attr(755,root,root) %{_libdir}/libXm.so.2
-%attr(755,root,root) %{_libdir}/libXm.so.3
+%{_libdir}/libXm.so.1
+%{_libdir}/libXm.so.2
+%{_libdir}/libXm.so.3
